@@ -1,9 +1,9 @@
 # Pillar 2 — Content Calendar: Module 11 (Knowledge Graphs & Structured Retrieval)
 
 **Source:** `RAG_Curriculum (1).md` → Module 11
-**Rule:** 1 concept = 1 post. Every Module 11 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
+**Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). Every Module 11 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
 
-**Module 11 has 4 concepts → 4 posts.**
+**Module 11 has 4 concepts → 5 posts (1 mini-series).**
 **Key terms to cover (7):** `GraphRAG` · `Knowledge graph` · `Entity extraction` · `Relation extraction` · `Text-to-SQL` · `Structured retrieval` · `Ontology`
 
 ---
@@ -51,18 +51,41 @@
 
 ---
 
-## Post 4 — Pick the right tool per query: hybrid graph + vector architectures
+## Post 4 — Pick the right tool per query: hybrid graph + vector architectures *(mini-series · 2 parts)*
 
 **Concept:** Hybrid graph + vector retrieval architectures.
 
 **Angle:** Real systems rarely pick one retriever — they route or blend. Semantic recall over documents (vectors), relational/multi-hop facts (graph), exact aggregates (SQL): different question types want different backends. The architecture either *routes* each query to the right retriever or *blends* their results, so you get fuzzy semantic coverage and precise structured answers from one system.
 
+**Series structure:** the two ways to combine retrievers each get their own post — send each query to one backend (routing), or query several and merge (blending).
+
+**Senior-level tie-in (series):** the module bar, part two — the senior move is a *router*: classify the query (semantic lookup vs. relational vs. aggregation) and dispatch to vector, graph, or SQL — graph *alongside* vectors, not instead of, chosen by query shape.
+
+### Post 4.1 — Routing: send each query to the right retriever
+
+**Concept:** Query routing across vector, graph, and SQL retrievers.
+
+**Angle:** Classify the incoming query first — semantic lookup, relational/multi-hop, or exact aggregate — then dispatch it to the one backend built for that shape: vectors, the knowledge graph, or SQL. Each query pays for one retriever, and each answer comes from the right tool.
+
 **Key terms covered here:**
 - `GraphRAG` *(reinforced)* — the graph retriever in the hybrid, handling relational/multi-hop queries.
 - `Knowledge graph` *(reinforced)* — the structured backend traversed for connected facts.
-- `Structured retrieval` *(reinforced)* — the database/SQL path in the blend, for exact and aggregate answers.
+- `Structured retrieval` *(reinforced)* — the database/SQL path, for exact and aggregate answers.
 
-**Senior-level tie-in:** the module bar, part two — the senior move is a *router*: classify the query (semantic lookup vs. relational vs. aggregation) and dispatch to vector, graph, or SQL — graph *alongside* vectors, not instead of, chosen by query shape.
+**Senior-level tie-in:** the router is now a single point of failure — a misclassified query goes to the wrong backend and gets a bad answer, so evaluate routing accuracy on its own.
+
+### Post 4.2 — Blending: ask several retrievers and merge the evidence
+
+**Concept:** Blending results from vector, graph, and SQL retrievers.
+
+**Angle:** Instead of picking one backend, query several in parallel and merge their results into one context — semantic passages alongside graph facts and SQL rows. Nothing depends on a single classification decision, and questions that span types get evidence from each.
+
+**Key terms covered here:**
+- `GraphRAG` *(reinforced)*
+- `Knowledge graph` *(reinforced)*
+- `Structured retrieval` *(reinforced)*
+
+**Senior-level tie-in:** blending costs more per query and makes the context harder to assemble (different result shapes, no shared score scale) — use it for mixed questions, routing for clearly typed ones.
 
 ---
 
@@ -70,12 +93,12 @@
 
 | Key term | Primary post | Also appears in |
 |---|---|---|
-| `GraphRAG` | Post 1 | Post 4 |
-| `Knowledge graph` | Post 1 | Post 4 |
+| `GraphRAG` | Post 1 | Posts 4.1, 4.2 |
+| `Knowledge graph` | Post 1 | Posts 4.1, 4.2 |
 | `Entity extraction` | Post 2 | — |
 | `Relation extraction` | Post 2 | — |
 | `Ontology` | Post 2 | — |
 | `Text-to-SQL` | Post 3 | — |
-| `Structured retrieval` | Post 3 | Post 4 |
+| `Structured retrieval` | Post 3 | Posts 4.1, 4.2 |
 
-✅ All 7 Module 11 key terms covered across the 4 posts.
+✅ All 7 Module 11 key terms covered across the 5 posts.

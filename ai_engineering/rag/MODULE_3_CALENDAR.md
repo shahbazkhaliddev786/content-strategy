@@ -1,27 +1,47 @@
 # Pillar 2 — Content Calendar: Module 3 (Embeddings)
 
 **Source:** `RAG_Curriculum (1).md` → Module 3
-**Rule:** 1 concept = 1 post. Every Module 3 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
+**Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). Every Module 3 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
 
-**Module 3 has 8 concepts → 8 posts.**
+**Module 3 has 8 concepts → 9 posts (1 mini-series).**
 **Key terms to cover (13):** `Bi-encoder` · `Dense vector` · `Cosine similarity` · `Dot product similarity` · `Euclidean/L2 distance` · `Embedding space` · `MTEB (Massive Text Embedding Benchmark)` · `Asymmetric search (query vs. passage encoding)` · `Matryoshka Representation Learning (MRL)` · `Fine-tuned embeddings / contrastive learning` · `Triplet loss` · `Embedding drift` · `Re-embedding / re-indexing migration`
 
 ---
 
-## Post 1 — Meaning as geometry: what an embedding model actually does
+## Post 1 — Meaning as geometry: what an embedding model actually does *(mini-series · 2 parts)*
 
 **Concept:** What an embedding model does — dense vector compression of meaning.
 
 **Angle:** Strip the mystique. An embedding model turns a piece of text into a point in a high-dimensional space, positioned so that texts meaning similar things land near each other. Once meaning is geometry, "search" becomes "find the nearest points" — and that requires a way to measure distance. Cover the vector, the space, and the three metrics used to score closeness.
 
+**Series structure:** first the idea (vectors and the space), then the choice that follows from it (how to measure closeness).
+
+**Senior-level tie-in (series):** know *why* cosine is the usual choice for text (direction encodes meaning, length often encodes nuisance like document length) and when normalization makes dot product and cosine interchangeable.
+
+### Post 1.1 — Meaning as geometry: text becomes a point in space
+
+**Concept:** Dense vectors and the embedding space.
+
+**Angle:** An embedding model turns text into a fixed-length list of numbers — a point in a high-dimensional space — positioned so that texts with similar meaning land close together. Once meaning is geometry, "search" becomes "find the nearest points." Contrast with a sparse keyword vector, where most dimensions are zero.
+
 **Key terms covered here:**
 - `Dense vector` *(primary)* — a fixed-length list of floats where every dimension carries signal (vs. a sparse, mostly-zero keyword vector).
 - `Embedding space` *(primary)* — the shared coordinate space all vectors live in; proximity ≈ semantic similarity.
+
+**Senior-level tie-in:** "near" only has meaning inside one model's space — vectors from different models can't be compared (sets up Post 8).
+
+### Post 1.2 — How close is close? Cosine vs. dot product vs. L2
+
+**Concept:** The three similarity metrics used to score closeness between vectors.
+
+**Angle:** "Find the nearest points" needs a definition of near. Cosine compares direction only; dot product uses direction *and* length; Euclidean (L2) measures straight-line distance. Show what each one rewards, and why the choice must match how the embedding model was trained.
+
+**Key terms covered here:**
 - `Cosine similarity` *(primary)* — similarity by angle between vectors, ignoring magnitude; the default for text.
 - `Dot product similarity` *(primary)* — angle *and* magnitude; equals cosine when vectors are normalized.
 - `Euclidean/L2 distance` *(primary)* — straight-line distance between points; lower = more similar.
 
-**Senior-level tie-in:** know *why* cosine is the usual choice for text (direction encodes meaning, length often encodes nuisance like document length) and when normalization makes dot product and cosine interchangeable.
+**Senior-level tie-in:** know *why* cosine is the usual choice for text (direction encodes meaning, length often encodes nuisance like document length) and when normalization makes dot product and cosine interchangeable — then use the metric the model card recommends.
 
 ---
 
@@ -124,11 +144,11 @@
 
 | Key term | Primary post | Also appears in |
 |---|---|---|
-| `Dense vector` | Post 1 | Post 6 |
-| `Embedding space` | Post 1 | Post 7 |
-| `Cosine similarity` | Post 1 | Post 7 |
-| `Dot product similarity` | Post 1 | — |
-| `Euclidean/L2 distance` | Post 1 | — |
+| `Dense vector` | Post 1.1 | Post 6 |
+| `Embedding space` | Post 1.1 | Post 7 |
+| `Cosine similarity` | Post 1.2 | Post 7 |
+| `Dot product similarity` | Post 1.2 | — |
+| `Euclidean/L2 distance` | Post 1.2 | — |
 | `Bi-encoder` | Post 2 | — |
 | `Asymmetric search (query vs. passage encoding)` | Post 3 | — |
 | `MTEB (Massive Text Embedding Benchmark)` | Post 4 | — |
@@ -138,4 +158,4 @@
 | `Embedding drift` | Post 8 | — |
 | `Re-embedding / re-indexing migration` | Post 8 | — |
 
-✅ All 13 Module 3 key terms covered across the 8 posts.
+✅ All 13 Module 3 key terms covered across the 9 posts.

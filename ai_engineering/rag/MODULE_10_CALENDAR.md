@@ -1,9 +1,9 @@
 # Pillar 2 — Content Calendar: Module 10 (Agentic & Advanced RAG)
 
 **Source:** `RAG_Curriculum (1).md` → Module 10
-**Rule:** 1 concept = 1 post. Every Module 10 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
+**Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). Every Module 10 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
 
-**Module 10 has 7 concepts → 7 posts.**
+**Module 10 has 7 concepts → 8 posts (1 mini-series).**
 **Key terms to cover (13):** `Agentic RAG` · `Self-RAG` · `Corrective RAG (CRAG)` · `Multi-hop retrieval` · `Iterative retrieval` · `Adaptive retrieval` · `Tool-use / function calling` · `Verifier/critic agent` · `Grounding verification loop` · `Retrieval-augmented reasoning` · `ReAct (Reason+Act) pattern` · `Plan-and-execute agents` · `Query decomposition`
 
 ---
@@ -39,17 +39,37 @@
 
 ---
 
-## Post 3 — Let it grade itself: self-critique & corrective loops
+## Post 3 — Let it grade itself: self-critique & corrective loops *(mini-series · 2 parts)*
 
 **Concept:** Self-critique and corrective retrieval loops.
 
 **Angle:** What if the system could notice its *own* bad retrieval and fix it? Two named approaches do exactly this. One lets the model emit reflection tokens judging whether retrieved context is relevant and whether its answer is supported. The other grades retrieval quality and, when it's weak, corrects course — re-retrieving or falling back to web search. Both close the quality gap without a human in the loop.
 
+**Series structure:** one post per named approach — Self-RAG judges itself while generating; CRAG grades retrieval and corrects course.
+
+**Senior-level tie-in (series):** these are concrete mechanisms, not vibes — Self-RAG gates on reflection tokens, CRAG gates on an evaluator score; know what each actually measures and when the extra passes are worth the latency.
+
+### Post 3.1 — Self-RAG: the model critiques itself while it writes
+
+**Concept:** Self-RAG — self-reflective retrieval and generation.
+
+**Angle:** A model trained to emit special reflection tokens decides, as it generates, whether it needs to retrieve, whether each retrieved passage is relevant, and whether its own output is supported by the evidence. Those judgments steer retrieval and generation without an external checker.
+
 **Key terms covered here:**
 - `Self-RAG` *(primary)* — the model self-reflects during generation (via special tokens) on whether to retrieve, whether context is relevant, and whether its output is supported.
+
+**Senior-level tie-in:** Self-RAG needs a model trained to produce those reflection tokens — you can't switch it on with a prompt on any LLM.
+
+### Post 3.2 — Corrective RAG (CRAG): grade the retrieval, then fix it
+
+**Concept:** CRAG — evaluating retrieved documents and correcting course.
+
+**Angle:** After retrieval, a lightweight evaluator grades the retrieved documents. Confident and relevant → proceed. Low confidence → take corrective action: refine the retrieved knowledge, re-retrieve, or fall back to a broader search such as the web.
+
+**Key terms covered here:**
 - `Corrective RAG (CRAG)` *(primary)* — a retrieval-evaluator grades retrieved docs and triggers corrective action (re-retrieve, refine, or fall back to broader search) when confidence is low.
 
-**Senior-level tie-in:** these are concrete mechanisms, not vibes — Self-RAG gates on reflection tokens, CRAG gates on an evaluator score; know what each actually measures and when the extra passes are worth the latency.
+**Senior-level tie-in:** CRAG wraps any existing pipeline without retraining the generator; its quality depends on the evaluator, and every correction adds latency — know the threshold that triggers it.
 
 ---
 
@@ -118,11 +138,11 @@
 | `Iterative retrieval` | Post 2 | — |
 | `Query decomposition` | Post 2 | — |
 | `Retrieval-augmented reasoning` | Post 2 | — |
-| `Self-RAG` | Post 3 | — |
-| `Corrective RAG (CRAG)` | Post 3 | — |
+| `Self-RAG` | Post 3.1 | — |
+| `Corrective RAG (CRAG)` | Post 3.2 | — |
 | `Adaptive retrieval` | Post 4 | — |
 | `Plan-and-execute agents` | Post 5 | — |
 | `Verifier/critic agent` | Post 6 | Post 7 |
 | `Grounding verification loop` | Post 7 | — |
 
-✅ All 13 Module 10 key terms covered across the 7 posts.
+✅ All 13 Module 10 key terms covered across the 8 posts.

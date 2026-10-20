@@ -1,9 +1,9 @@
 # Pillar 2 — Content Calendar: Module 12 (System Design Practice) — FINAL MODULE
 
 **Source:** `RAG_Curriculum (1).md` → Module 12
-**Rule:** 1 concept = 1 post. **Special case — integrative module: NO new key terms.** The curriculum states this is "where every term above gets used together," so every post here *reinforces* terms from earlier modules rather than introducing new ones. Term-coverage is therefore N/A by design; the bottom table maps each post to the modules it integrates instead.
+**Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). **Special case — integrative module: NO new key terms.** The curriculum states this is "where every term above gets used together," so every post here *reinforces* terms from earlier modules rather than introducing new ones. Term-coverage is therefore N/A by design; the bottom table maps each post to the modules it integrates instead.
 
-**Module 12 has 5 concepts → 5 posts.**
+**Module 12 has 5 concepts → 5 posts (0 mini-series).**
 **New key terms:** none (integrative capstone).
 
 ---
