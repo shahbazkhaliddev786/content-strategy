@@ -2,7 +2,7 @@
 
 The single source of truth for **what gets posted, in what order**. One row = one daily post (**114 posts**).
 
-- **RAG #** is the public series number shown on the carousel (top-right) and in captions.
+- **RAG #** is the series number used in captions and tracking only. It is never shown on the carousel slides.
 - **Module / Post** point to the post's full brief in `MODULE_<N>_CALENDAR.md` (concept, angle, key terms, senior-level tie-in). Sub-numbered posts (e.g. `Post 2.1`) are parts of a mini-series.
 - **Next post to publish** = the row after the last entry in [posted.md](posted.md). Its **teaser** names the row after that.
 - Module calendars keep their original post numbering; this file adds the global order on top, so the two never conflict.
