@@ -89,7 +89,7 @@
 - `Context window` *(reinforced)* — the constraint that decides when long-context is viable.
 - `Parametric knowledge` *(reinforced)* — the thing fine-tuning changes and RAG leaves alone.
 
-**Senior-level tie-in:** deliver the module's bar — can argue *against* RAG with specifics (e.g., small/stable corpus → long-context; need reasoning over relationships → knowledge graph).
+**Senior-level tie-in:** production systems often combine approaches — fine-tune for format and behavior, RAG for facts, long-context for a few always-needed documents. The skill is naming which problem each one solves, not crowning a single winner.
 
 ---
 

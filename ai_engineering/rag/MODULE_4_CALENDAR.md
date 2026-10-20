@@ -104,7 +104,7 @@
 - `ScaNN` *(reinforced)*
 - `Recall@k` *(reinforced)* — the metric every one of these trades against speed.
 
-**Senior-level tie-in:** be able to reach for IVF-PQ when memory is the constraint and HNSW when recall/latency is — and say *why* in one sentence each.
+**Senior-level tie-in:** don't choose from a table — benchmark recall@k vs. latency vs. memory on your own vectors at your target scale. Most vector databases default to HNSW, so the real decision is usually *when to move off it* (memory pressure → IVF-PQ or other quantization).
 
 ---
 

@@ -1,9 +1,9 @@
 # Pillar 2 — Content Calendar: Module 8 (Evaluation)
 
 **Source:** `RAG_Curriculum (1).md` → Module 8
-**Rule:** 1 concept = 1 post. Every Module 8 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
+**Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). Every Module 8 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
 
-**Module 8 has 7 concepts → 7 posts.**
+**Module 8 has 7 concepts → 7 posts (0 mini-series).**
 **Key terms to cover (16):** `Recall@k` · `Precision@k` · `MRR (Mean Reciprocal Rank)` · `nDCG (normalized Discounted Cumulative Gain)` · `Faithfulness` · `Answer relevance` · `Context precision` · `Context recall` · `RAGAS` · `Golden dataset` · `LLM-as-judge` · `Synthetic Q&A generation` · `Regression testing` · `Online metrics` · `Offline metrics` · `Human-in-the-loop evaluation`
 
 ---

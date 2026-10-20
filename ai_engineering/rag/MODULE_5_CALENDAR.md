@@ -155,7 +155,7 @@
 - `Multi-query retrieval` *(reinforced)*
 - `Step-back prompting` *(reinforced)*
 
-**Senior-level tie-in:** these cost latency and LLM calls up front — know the trade: reach for them when queries are short/ambiguous/conversational, skip them when queries are already well-formed and latency-sensitive.
+**Senior-level tie-in:** transformations stack, and so do their costs — start with rewriting for chat, and add others only when evals show the specific failure each one fixes. Every technique has to earn its extra LLM call against the latency budget.
 
 ---
 

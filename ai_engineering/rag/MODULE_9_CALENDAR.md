@@ -53,7 +53,7 @@
 - `Semantic caching` *(primary)* — serve a cached response when an incoming query is semantically similar (above a threshold) to a previously answered one, not just byte-identical.
 - `Latency budget` *(reinforced)* — a hit skips the most expensive stages.
 
-**Senior-level tie-in:** know the risk of semantic caching — too loose a similarity threshold returns a stale/wrong cached answer; tune it against your eval set and expire entries when the index changes.
+**Senior-level tie-in:** a cached answer is only safe if it doesn't depend on *who* is asking or *when* — scope the cache per tenant and permission set, skip it for time-sensitive queries, and tune the similarity threshold against your eval set rather than by feel.
 
 ---
 
