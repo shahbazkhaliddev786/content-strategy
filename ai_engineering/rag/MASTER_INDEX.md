@@ -1,9 +1,9 @@
 # Pillar 2 — Technical RAG Content Calendars
 
-The master index for Pillar 2 (technical content). Each module of the RAG curriculum is mapped into a standalone content calendar; together they lay out **113 planned posts** (77 concepts, 18 of them expanded into mini-series) that take a reader from RAG foundations to production and agentic systems.
+The master index for Pillar 2 (technical content). Each module of the RAG curriculum is mapped into a standalone content calendar; together they lay out **114 planned posts** (77 concepts, 18 of them expanded into mini-series) that take a reader from RAG foundations to production and agentic systems.
 
 **Source curriculum:** [RAG_Curriculum (1).md](RAG_Curriculum%20%281%29.md)
-**Posting order:** [SERIES_ORDER.md](SERIES_ORDER.md) (RAG #01–#113) · **Publish log:** [posted.md](posted.md)
+**Posting order:** [SERIES_ORDER.md](SERIES_ORDER.md) (RAG #01–#114) · **Publish log:** [posted.md](posted.md)
 
 ---
 
@@ -25,7 +25,7 @@ Every module calendar follows the same contract:
 | Module | Topic | Posts | Mini-series | Key terms | Calendar |
 |---|---|---|---|---|---|
 | 0 | Prerequisites & Mental Model | 5 | 1: RAG vs. Alternatives | 8 | [MODULE_0_CALENDAR.md](MODULE_0_CALENDAR.md) |
-| 1 | Document Ingestion & Parsing | 7 | 2: File Formats, Multi-modal Content | 8 | [MODULE_1_CALENDAR.md](MODULE_1_CALENDAR.md) |
+| 1 | Document Ingestion & Parsing | 8 | 2: File Formats, Multi-modal Content | 8 | [MODULE_1_CALENDAR.md](MODULE_1_CALENDAR.md) |
 | 2 | Chunking Strategies | 11 | 2: Small-to-Big, Chunking by Doc Type | 11 | [MODULE_2_CALENDAR.md](MODULE_2_CALENDAR.md) |
 | 3 | Embeddings | 9 | 1: Embeddings 101 | 13 | [MODULE_3_CALENDAR.md](MODULE_3_CALENDAR.md) |
 | 4 | Indexing & Vector Search | 16 | 3: ANN Algorithms, Filtering, Scaling the Index | 15 | [MODULE_4_CALENDAR.md](MODULE_4_CALENDAR.md) |
@@ -37,7 +37,7 @@ Every module calendar follows the same contract:
 | 10 | Agentic & Advanced RAG | 8 | 1: Self-Correcting RAG | 13 | [MODULE_10_CALENDAR.md](MODULE_10_CALENDAR.md) |
 | 11 | Knowledge Graphs & Structured Retrieval | 5 | 1: Hybrid Graph + Vector | 7 | [MODULE_11_CALENDAR.md](MODULE_11_CALENDAR.md) |
 | 12 | System Design Practice | 5 | — | 0* | [MODULE_12_CALENDAR.md](MODULE_12_CALENDAR.md) |
-| | **Total** | **113** | **18** | **135** | |
+| | **Total** | **114** | **18** | **135** | |
 
 \* Module 12 is an integrative capstone — it introduces **no new key terms**; every post reinforces terms from earlier modules.
 
@@ -45,6 +45,6 @@ Every module calendar follows the same contract:
 
 ## Status & next steps
 
-✅ **Planning complete** — all 13 module calendars are written and term-coverage verified, including the 18 mini-series (77 → 113 posts).
+✅ **Planning complete** — all 13 module calendars are written and term-coverage verified, including the 18 mini-series (77 → 114 posts).
 
 **Next:** publish daily in the order set by [SERIES_ORDER.md](SERIES_ORDER.md), starting at RAG #01 (Module 0 foundations). The calendars are the outline (concept, angle, key terms, senior-level tie-in per post); each published post is logged in [posted.md](posted.md).

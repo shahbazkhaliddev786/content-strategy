@@ -3,7 +3,7 @@
 **Source:** `RAG_Curriculum (1).md` → Module 1
 **Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). Every Module 1 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
 
-**Module 1 has 5 concepts → 7 posts (2 mini-series).**
+**Module 1 has 5 concepts → 8 posts (2 mini-series).**
 **Key terms to cover (8):** `OCR (Optical Character Recognition)` · `Layout parsing` · `Document AI / structure extraction` · `Table serialization` · `Multi-modal RAG` · `Change data capture (CDC)` · `Incremental ingestion` · `ETL/ELT for unstructured data`
 
 ---
@@ -21,13 +21,13 @@
 
 ---
 
-## Post 2 — Every file format breaks differently *(mini-series · 2 parts)*
+## Post 2 — Every file format breaks differently *(mini-series · 3 parts)*
 
 **Concept:** Parsing heterogeneous formats — PDF (text vs. scanned/OCR), HTML, DOCX, code, tables, images.
 
 **Angle:** A RAG pipeline eats PDFs, HTML, DOCX, source code, spreadsheets, scans — and each fails in its own way. A digital PDF has extractable text; a scanned one is just pixels and needs OCR. Tables flatten into gibberish unless you serialize them deliberately. The parser you choose silently decides what's even answerable downstream.
 
-**Series structure:** the two format problems that most often destroy answerability each get their own post — scanned content (OCR) and tables (serialization).
+**Series structure:** one post per way a format breaks — scanned content (OCR), tables (serialization), and born-digital formats like HTML, DOCX and code (format-aware parsing).
 
 **Senior-level tie-in (series):** this is the module's bar — explain why a PDF parser choice changes retrieval quality (lose table structure → lose answerability).
 
@@ -53,6 +53,18 @@
 - `Table serialization` *(primary)* — converting a 2-D table into a text form (Markdown/CSV/HTML) that preserves row–column meaning for embedding.
 
 **Senior-level tie-in:** lose table structure → lose answerability; pick a serialization that keeps headers attached to each value, and test it against real table questions.
+
+### Post 2.3 — Digital files break too: format-aware parsing for HTML, DOCX & code
+
+**Concept:** Parsing born-digital formats while keeping their structure.
+
+**Angle:** HTML, DOCX and source code already have text — that's the trap. A naive dump of a web page includes navigation menus, cookie banners and footers, and loses which line was a heading. A DOCX loses its heading levels and list structure. Code loses its syntax. Format-aware parsers keep headings, sections and lists, strip the boilerplate, and hand the next stage clean, structured text instead of a flat string.
+
+**Key terms covered here:**
+- `Document AI / structure extraction` *(reinforced)* — the goal for every format: extract structure, not just characters.
+- `ETL/ELT for unstructured data` *(reinforced)* — this is the per-format "transform" step of the pipeline.
+
+**Senior-level tie-in:** preserving headings at parse time is what makes structure-aware chunking possible (Module 2 · Post 2), and parsing code by its syntax is what code-aware chunking depends on (Module 2 · Post 5.1).
 
 ---
 
@@ -129,10 +141,10 @@
 | `OCR (Optical Character Recognition)` | Post 2.1 | Post 4.1 |
 | `Table serialization` | Post 2.2 | Posts 3, 4.1 |
 | `Layout parsing` | Post 3 | — |
-| `Document AI / structure extraction` | Post 3 | Post 2.1 |
+| `Document AI / structure extraction` | Post 3 | Posts 2.1, 2.3 |
 | `Multi-modal RAG` | Post 4.1 | Post 4.2 |
 | `Change data capture (CDC)` | Post 5 | — |
 | `Incremental ingestion` | Post 5 | — |
-| `ETL/ELT for unstructured data` | Post 1 | Post 5 |
+| `ETL/ELT for unstructured data` | Post 1 | Posts 2.3, 5 |
 
-✅ All 8 Module 1 key terms covered across the 7 posts.
+✅ All 8 Module 1 key terms covered across the 8 posts.
