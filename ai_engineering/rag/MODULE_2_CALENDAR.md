@@ -1,9 +1,9 @@
 # Pillar 2 — Content Calendar: Module 2 (Chunking Strategies)
 
 **Source:** `RAG_Curriculum (1).md` → Module 2
-**Rule:** 1 concept = 1 post. Every Module 2 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
+**Rule:** 1 concept = 1 post; a multi-strategy concept = 1 mini-series (one post per strategy, sub-numbered N.1, N.2, …). Every Module 2 key term must be explained across these posts. Key terms may repeat across posts; each post explicitly lists the terms it covers.
 
-**Module 2 has 7 concepts → 7 posts.**
+**Module 2 has 7 concepts → 11 posts (2 mini-series).**
 **Key terms to cover (11):** `Chunk` · `Chunk overlap` · `Sliding window` · `Semantic chunking` · `Recursive character/token splitting` · `Parent-document retriever` · `Small-to-big retrieval` · `Contextual Retrieval` (Anthropic technique) · `Chunk boundary problem` · `Token-based vs. character-based splitting` · `Sentence-window retrieval`
 
 ---
@@ -52,32 +52,99 @@
 
 ---
 
-## Post 4 — Small-to-big: retrieve precise, return rich
+## Post 4 — Small-to-big: retrieve precise, return rich *(mini-series · 2 parts)*
 
 **Concept:** Hierarchical / parent-child chunking (small-to-big retrieval).
 
 **Angle:** There's a tension: small chunks retrieve *precisely* (tight embeddings) but give the LLM too little context; big chunks give context but retrieve fuzzily. Small-to-big resolves it — index small, then hand the model the larger parent the match came from. Cover the family of techniques that do this.
 
-**Key terms covered here:**
-- `Parent-document retriever` *(primary)* — index small child chunks for matching, but return their larger parent document/section to the LLM.
-- `Small-to-big retrieval` *(primary)* — the general pattern: match on small units, expand to bigger context before generation.
-- `Sentence-window retrieval` *(primary)* — a specific variant: embed single sentences, then return a window of surrounding sentences around each hit.
+**Series structure:** the two main small-to-big techniques each get their own post.
 
-**Senior-level tie-in:** this is where you decouple *what you match on* from *what you feed the model* — a defining move of production-grade retrieval.
+**Senior-level tie-in (series):** this is where you decouple *what you match on* from *what you feed the model* — a defining move of production-grade retrieval.
+
+### Post 4.1 — Match small, return the parent: the parent-document retriever
+
+**Concept:** Parent-document retrieval — index child chunks, return their parent section.
+
+**Angle:** Split each section into small child chunks and embed only those, but keep a link from every child to its parent. When a child matches, return the whole parent section to the LLM. You get the precision of small embeddings with the context of a full section.
+
+**Key terms covered here:**
+- `Small-to-big retrieval` *(primary)* — the general pattern: match on small units, expand to bigger context before generation.
+- `Parent-document retriever` *(primary)* — index small child chunks for matching, but return their larger parent document/section to the LLM.
+
+**Senior-level tie-in:** watch parent size — several hits from different parents can blow the context budget fast; dedupe parents when multiple children from the same one match.
+
+### Post 4.2 — One sentence in, a window out: sentence-window retrieval
+
+**Concept:** Sentence-window retrieval — embed single sentences, return their neighbors.
+
+**Angle:** Go even smaller: embed individual sentences, so each vector is about exactly one idea. On a hit, return a window of the surrounding sentences (e.g. 2–3 on each side) so the model sees the context that sentence depends on.
+
+**Key terms covered here:**
+- `Sentence-window retrieval` *(primary)* — a specific variant: embed single sentences, then return a window of surrounding sentences around each hit.
+- `Small-to-big retrieval` *(reinforced)* — the same pattern at sentence granularity.
+
+**Senior-level tie-in:** choose sentence-window for dense, fact-heavy text where one sentence holds the answer; choose parent-document when answers need the whole section's structure. Sentence-level indexing also means many more vectors to store.
 
 ---
 
-## Post 5 — One chunker doesn't fit all: document-type-specific chunking
+## Post 5 — One chunker doesn't fit all: document-type-specific chunking *(mini-series · 4 parts)*
 
 **Concept:** Document-type-specific chunking — code, tables, legal clauses, conversation transcripts.
 
 **Angle:** A strategy tuned for prose wrecks a codebase. Code has functions and classes; tables have rows; legal docs have numbered clauses; transcripts have turns. The natural unit changes with the document type, and so should the splitter. Walk through each type and its right boundary.
 
-**Key terms covered here:**
-- `Recursive character/token splitting` *(reinforced)* — adapt the separator list per type (e.g. split code on function/class boundaries, legal text on clause markers).
-- `Chunk boundary problem` *(reinforced)* — type-specific: splitting mid-function or mid-clause is the same failure in a new costume.
+**Series structure:** one post per document type, each answering: what's the natural unit, how does a prose chunker break it, and what's the right boundary.
 
-**Senior-level tie-in:** directly the module bar — be able to *pick and justify* a chunking strategy per document type on the spot.
+**Senior-level tie-in (series):** directly the module bar — be able to *pick and justify* a chunking strategy per document type on the spot.
+
+### Post 5.1 — Chunking code: split on functions, not characters
+
+**Concept:** Chunking source code along syntactic boundaries.
+
+**Angle:** A character-count splitter cuts a function in half, separating its signature from its body. Code's natural unit is the function or class: split on those boundaries using language-aware separators, and keep enough surrounding context (file path, class name, imports) that a chunk still makes sense on its own.
+
+**Key terms covered here:**
+- `Recursive character/token splitting` *(reinforced)* — adapt the separator list per type (e.g. split code on function/class boundaries).
+- `Chunk boundary problem` *(reinforced)* — splitting mid-function is the same failure in a new costume.
+
+**Senior-level tie-in:** very long functions still need splitting — fall back to logical blocks inside them, and carry the signature into each piece.
+
+### Post 5.2 — Chunking tables: never separate a row from its headers
+
+**Concept:** Chunking tabular data by rows while keeping headers attached.
+
+**Angle:** Split a long table by character count and later chunks lose the header row — a column of numbers with no labels. Chunk by groups of whole rows instead, and repeat the header (and table title) in every chunk so each one is self-describing.
+
+**Key terms covered here:**
+- `Chunk boundary problem` *(reinforced)* — cutting mid-row or dropping headers is the table version of the failure.
+- `Recursive character/token splitting` *(reinforced)* — row boundaries become the separator.
+
+**Senior-level tie-in:** for questions that aggregate across a whole table ("total by region"), chunking won't help — that's a Text-to-SQL problem (Module 11).
+
+### Post 5.3 — Chunking legal documents: the clause is the unit
+
+**Concept:** Chunking legal and contractual text on clause boundaries.
+
+**Angle:** Legal text is built from numbered clauses and sub-clauses, and meaning depends on both the clause and where it sits ("Section 4.2(b)"). Split on clause markers, keep the clause number and heading path in each chunk, and avoid merging unrelated clauses just to hit a size target.
+
+**Key terms covered here:**
+- `Recursive character/token splitting` *(reinforced)* — clause markers as the separator list.
+- `Chunk boundary problem` *(reinforced)* — splitting mid-clause can flip a meaning ("shall" vs. an exception in the next line).
+
+**Senior-level tie-in:** clauses reference each other ("subject to Section 7") — note that a single chunk may not carry the full answer, which motivates multi-hop retrieval later (Module 10).
+
+### Post 5.4 — Chunking transcripts: keep the conversation turns together
+
+**Concept:** Chunking conversation transcripts on speaker turns.
+
+**Angle:** Meetings, support calls, and interviews are sequences of speaker turns. A size-based splitter separates a question from its answer. Split on turns, keep speaker labels (and timestamps), and group related exchanges — a question and its reply — into the same chunk.
+
+**Key terms covered here:**
+- `Chunk boundary problem` *(reinforced)* — splitting a question from its answer is the transcript version.
+- `Recursive character/token splitting` *(reinforced)* — speaker turns as the separator.
+
+**Senior-level tie-in:** long single turns (a monologue) still need sub-splitting — keep the speaker label on every piece.
 
 ---
 
@@ -117,12 +184,12 @@
 | `Chunk overlap` | Post 1 | Post 7 |
 | `Sliding window` | Post 1 | — |
 | `Token-based vs. character-based splitting` | Post 1 | Post 7 |
-| `Recursive character/token splitting` | Post 2 | Post 5 |
-| `Chunk boundary problem` | Post 2 | Posts 3, 5 |
+| `Recursive character/token splitting` | Post 2 | Posts 5.1–5.4 |
+| `Chunk boundary problem` | Post 2 | Posts 3, 5.1–5.4 |
 | `Semantic chunking` | Post 3 | — |
-| `Parent-document retriever` | Post 4 | — |
-| `Small-to-big retrieval` | Post 4 | — |
-| `Sentence-window retrieval` | Post 4 | — |
+| `Parent-document retriever` | Post 4.1 | — |
+| `Small-to-big retrieval` | Post 4.1 | Post 4.2 |
+| `Sentence-window retrieval` | Post 4.2 | — |
 | `Contextual Retrieval` | Post 6 | — |
 
-✅ All 11 Module 2 key terms covered across the 7 posts.
+✅ All 11 Module 2 key terms covered across the 11 posts.
