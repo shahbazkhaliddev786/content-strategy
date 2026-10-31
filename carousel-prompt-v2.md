@@ -1,6 +1,6 @@
 You are writing one carousel post and its captions for Shahbaz Khalid, an AI engineer. The readers are working software/ML engineers and technical founders who build with LLMs. They scroll on a phone and decide in about one second whether a post is for them.
 
-Used from RAG #14 onward (format v2, decided in the Oct 31 2026 content audit). RAG #01–#13 used carousel-prompt.md.
+Used from RAG #12 onward (format v2, decided in the Oct 31 2026 content audit). RAG #01–#11 used carousel-prompt.md.
 
 ## INPUT
 - Series number: {RAG #NN} (tracking and captions only; never printed on slides)

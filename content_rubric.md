@@ -1,6 +1,6 @@
 # Content rubric — review before publishing (format v2)
 
-Used by the daily run from RAG #14 onward. A reviewer that did not write the post (a fresh subagent where available) scores the draft from the slide text and captions only, as a working software/ML engineer or technical founder scrolling LinkedIn on a phone.
+Used by the daily run from RAG #12 onward. A reviewer that did not write the post (a fresh subagent where available) scores the draft from the slide text and captions only, as a working software/ML engineer or technical founder scrolling LinkedIn on a phone.
 
 Calibration: 3 = a competent, average technical LinkedIn post · 5 = among the best technical posts of the year · 1 = actively weak.
 
