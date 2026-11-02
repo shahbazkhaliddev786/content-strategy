@@ -18,3 +18,4 @@ Rows for RAG #01–#11 were backfilled from the published posts on Oct 31 2026 (
 | RAG #10 | Your Parser Ignores Layout. | Your PDF parser can read every character and still hand your RAG system garbage. | v1 template |
 | RAG #11 | Your RAG Is Blind to Charts. | Your RAG pipeline can't see charts. Half the answers in a board deck live in pixels, and your parser just drops them. | v1 template |
 | RAG #12 | CLIP reads 77 tokens of text. | CLIP's text encoder has a context length of 77 tokens. That one number shapes how you build direct multi-modal retrieval for RAG. | B (claim) |
+| RAG #13 | Deleted docs still answer | Change detection in RAG ingestion has a blind spot: deleted files. | A (story) |
