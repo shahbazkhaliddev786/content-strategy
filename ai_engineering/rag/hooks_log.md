@@ -19,3 +19,4 @@ Rows for RAG #01–#11 were backfilled from the published posts on Oct 31 2026 (
 | RAG #11 | Your RAG Is Blind to Charts. | Your RAG pipeline can't see charts. Half the answers in a board deck live in pixels, and your parser just drops them. | v1 template |
 | RAG #12 | CLIP reads 77 tokens of text. | CLIP's text encoder has a context length of 77 tokens. That one number shapes how you build direct multi-modal retrieval for RAG. | B (claim) |
 | RAG #13 | Deleted docs still answer | Change detection in RAG ingestion has a blind spot: deleted files. | A (story) |
+| RAG #14 | Where did the refund rule go? | Fixed-size chunking with overlap comes with one guarantee: any fact shorter than the overlap lands whole in at least one chunk. | B (claim) |
