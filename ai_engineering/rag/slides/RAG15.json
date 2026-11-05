@@ -7,12 +7,18 @@
     {
       "type": "cover",
       "title": "[Recursive] / splitting",
-      "hook": "Why it still cuts sentences in half, and the two settings that stop it"
+      "hook": "Split on paragraphs first, then lines, then words. And why the defaults still cut sentences in half.",
+      "inside": [
+        "How recursive chunking works",
+        "Real LangChain outputs, good and bad",
+        "5 settings that change where it cuts",
+        "One splitter config with every fix"
+      ]
     },
     {
       "type": "body",
-      "title": "[Biggest] separator / first",
-      "text": "Any piece still over `chunk_size` is split again with the next separator. Small neighbours are merged back up to the limit.",
+      "title": "Cut at the [seams]",
+      "text": "Documents already have structure. Recursive splitting tries the biggest separator first and falls back to a smaller one only when a piece is still too big.",
       "visuals": [
         {
           "kind": "cascade",
@@ -28,7 +34,7 @@
             },
             {
               "code": "\" \"",
-              "label": "Spaces"
+              "label": "Words"
             },
             {
               "code": "\"\"",
@@ -37,74 +43,226 @@
             }
           ]
         }
-      ]
+      ],
+      "after": "That's the default list in LangChain's `RecursiveCharacterTextSplitter`, which its docs call \"the recommended one for generic text\"."
     },
     {
       "type": "body",
-      "title": "No [sentence] break / by default",
-      "text": "LangChain's default separators are `\\n\\n`, `\\n`, a space and `\"\"`. One long paragraph falls straight to spaces.",
+      "title": "How it [recurses]",
+      "text": "From the langchain-text-splitters source (v1.1.3):",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Take the first separator in the list that appears in the text.",
+            "Split the text on it.",
+            "Split any piece at or over `chunk_size` again, with the separators after it.",
+            "Merge pieces under the limit back together, up to `chunk_size`.",
+            "Start the next chunk with whole pieces from the end of the last, up to `chunk_overlap`."
+          ]
+        }
+      ],
+      "after": "Overlap moves whole pieces. With sentence pieces and `chunk_size=100`, `chunk_overlap=50` repeats a 45-character sentence. `chunk_overlap=40` repeats nothing."
+    },
+    {
+      "type": "body",
+      "title": "The defaults still / [cut] sentences",
+      "text": "The default list has no sentence separator. A paragraph with no line breaks falls through to spaces, so cuts land wherever the characters run out.",
       "visuals": [
         {
           "kind": "chunks",
           "state": "bad",
-          "caption": "chunk_size=60",
+          "caption": "chunk_size=60, chunk_overlap=0, default separators",
           "chunks": [
-            "…30 days of purchase. !!After 30!!",
-            "!!days,!! refunds need manager approval…"
+            "Refunds are accepted within 30 days of purchase. !!After 30!!",
+            "!!days,!! refunds need manager approval. !!Digital items are!!",
+            "!!never refundable.!!"
           ],
-          "cut": 1,
-          "cut_label": "Cut mid-sentence"
+          "cut": [
+            1,
+            2
+          ]
         }
-      ]
+      ],
+      "after": "This is the chunk boundary problem. The approval rule is split across chunks 1 and 2, and chunk 3 says \"never refundable.\" with no subject."
     },
     {
       "type": "body",
       "title": "Add a sentence / [separator]",
+      "text": "Put `\". \"` between lines and words. Then `keep_separator` decides which chunk the period lands in.",
       "visuals": [
         {
           "kind": "code",
           "code": "separators=[\"\\n\\n\", \"\\n\", {{\". \"}}, \" \", \"\"]"
         },
         {
-          "kind": "chunks",
-          "state": "good",
-          "caption": "chunk_size=60",
-          "chunks": [
-            "…30 days of purchase!!.!!",
-            "!!After 30 days,!! refunds need manager approval…"
-          ],
-          "verdict": "Each refund rule is now its own chunk."
+          "kind": "variants",
+          "caption": "Chunk 2 of the same paragraph, chunk_size=60",
+          "options": [
+            {
+              "setting": "keep_separator=True",
+              "tag": "default",
+              "output": "!!.!! After 30 days, refunds need manager approval",
+              "state": "bad",
+              "note": "Period opens the next chunk"
+            },
+            {
+              "setting": "keep_separator=\"end\"",
+              "output": "After 30 days, refunds need manager approval!!.!!",
+              "state": "good",
+              "note": "One whole sentence per chunk"
+            },
+            {
+              "setting": "keep_separator=False",
+              "output": "After 30 days, refunds need manager approval",
+              "state": "bad",
+              "note": "Period dropped"
+            }
+          ]
         }
-      ],
-      "after": "Set `keep_separator=\"end\"`, or the period opens the next chunk instead of closing its sentence."
+      ]
     },
     {
       "type": "body",
-      "title": "Sizes count / [characters]",
+      "title": "Keep the / [last resort]",
+      "text": "The final `\"\"` splits into single characters, so no chunk can go over `chunk_size`. Remove it, and a piece with no separator left stays whole, however long.",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "label": "With `\"\"` (default), a 75-character URL, chunk_size=40",
+          "state": "bad",
+          "chunks": [
+            "https://example.com/policies/refunds/!!int!!",
+            "!!ernational!!/eu-customers-2026-update"
+          ],
+          "cut": 1,
+          "cut_label": "Cut mid-word",
+          "compact": true
+        },
+        {
+          "kind": "chunks",
+          "label": "Without `\"\"`",
+          "state": "bad",
+          "chunks": [
+            "https://example.com/policies/refunds/international/eu-customers-2026-update"
+          ],
+          "verdict": "75 characters, over the limit of 40, and no warning",
+          "compact": true
+        }
+      ],
+      "after": "Keep `\"\"` so chunks fit your embedder's limit. Drop it only if long strings must stay whole, then check lengths."
+    },
+    {
+      "type": "body",
+      "title": "Size in [tokens]",
+      "text": "`chunk_size` counts characters by default, because `length_function=len`. The default 4,000 characters is roughly 1,000 tokens of English, and your embedder's limit is in tokens.",
       "visuals": [
         {
           "kind": "code",
-          "label": "The defaults",
-          "code": "RecursiveCharacterTextSplitter(\n    chunk_size=4000,\n    chunk_overlap=200,\n    length_function=len,\n)"
-        },
-        {
-          "kind": "code",
-          "label": "Counts tiktoken tokens instead",
-          "code": "(RecursiveCharacterTextSplitter\n    .from_tiktoken_encoder())"
+          "code": "splitter = (RecursiveCharacterTextSplitter\n    .from_tiktoken_encoder(\n        {{model_name=\"text-embedding-3-small\"}},\n        chunk_size=500, chunk_overlap=100))"
         }
       ],
-      "after": "Your embedder reads tokens. Use the second form, or pass your model's tokenizer as `length_function`."
+      "bullets": [
+        "`model_name` picks the matching encoding: `cl100k_base` for text-embedding-3.",
+        "With no `model_name` or `encoding_name`, it falls back to the `\"gpt2\"` encoding.",
+        "For open models, `from_huggingface_tokenizer(tokenizer)` counts with the model's own tokenizer."
+      ],
+      "instagram": false
+    },
+    {
+      "type": "body",
+      "title": "Split Markdown / on [headings]",
+      "text": "`from_language()` has separator presets for 28 languages and formats in v1.1.3. For Markdown, headings come first.",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "label": "Default separators, chunk_size=120 (shortened)",
+          "state": "bad",
+          "chunks": [
+            "## Refunds\nRefunds are accepted within… approval.\n!!## Shipping!!",
+            "Orders ship within 2 business days…"
+          ],
+          "verdict": "The Shipping heading ends the refunds chunk",
+          "compact": true
+        },
+        {
+          "kind": "chunks",
+          "label": "`from_language(Language.MARKDOWN)`",
+          "state": "good",
+          "chunks": [
+            "## Refunds\nRefunds are accepted within… approval.",
+            "!!## Shipping!!\nOrders ship within 2 business days…"
+          ],
+          "verdict": "Each section keeps its own heading",
+          "compact": true
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Put it all / [together]",
+      "text": "Every fix from this post in one splitter: a sentence separator, the period kept at the end, and sizes counted in your embedder's tokens.",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "R = RecursiveCharacterTextSplitter\nsplitter = R.from_tiktoken_encoder(\n    model_name=\"text-embedding-3-small\",\n    separators=[\"\\n\\n\", \"\\n\", \". \", \" \", \"\"],\n    keep_separator=\"end\",\n    chunk_size=500, chunk_overlap=100,\n)"
+        }
+      ],
+      "bullets": [
+        "500 and 100 are example sizes. Set `chunk_size` from your embedder's input limit.",
+        "For Markdown, pass `R.get_separators_for_language(...)` and `is_separator_regex=True`."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "When it's [enough]",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Docs have structure: paragraphs, headings, lists",
+                "Ingest must be cheap: it makes no model calls",
+                "Every chunk must fit a hard token limit"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Topics change mid-paragraph: try semantic chunking",
+                "Answers need the text around the match: try parent-document retrieval",
+                "`\". \"` also splits after \"e.g.\" and \"Dr.\": try `NLTKTextSplitter`",
+                "Text has no reliable breaks, like raw OCR: cuts fall back to fixed-size"
+              ]
+            }
+          ]
+        }
+      ],
+      "instagram": false
     },
     {
       "type": "cheatsheet",
       "title": "[Cheat] sheet",
       "rows": [
-        "Biggest separator first, then recurse",
-        "The default list has no sentence break",
-        "Add `\". \"` between `\"\\n\"` and `\" \"`",
+        "Biggest separator first, then smaller ones",
+        "Defaults: `\\n\\n`, `\\n`, `\" \"`, `\"\"`. No sentence break",
+        "Add `\". \"` before `\" \"` to cut between sentences",
         "`keep_separator=\"end\"` keeps the period",
-        "Sizes count characters by default"
+        "Keep `\"\"` last so no chunk exceeds `chunk_size`",
+        "Size in tokens: `from_tiktoken_encoder(model_name=...)`",
+        "Markdown, HTML, code: `from_language(Language.X)`"
       ]
+    },
+    {
+      "type": "teaser",
+      "module": "RAG chunking",
+      "series": null,
+      "title": "[Semantic] / chunking",
+      "line": "Recursive splitting cuts where the text has breaks. Semantic chunking cuts where the meaning shifts."
     }
   ]
 }

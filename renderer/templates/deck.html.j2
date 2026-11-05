@@ -9,19 +9,36 @@
 {%- set total = post.slides | length %}
 
 {%- macro strip(i) -%}
-<div class="strip" aria-hidden="true">{% for n in range(total) %}<i class="{{ 'on' if n == i else '' }}"></i>{% endfor %}</div>
+<div class="strip{{ ' many' if total > 12 else '' }}" aria-hidden="true">{% for n in range(total) %}<i class="{{ 'on' if n == i else '' }}"></i>{% endfor %}</div>
+{%- endmacro %}
+
+{%- macro seriesline(sr) -%}
+<div class="series"><span>{{ sr.name }}</span><span class="parts" aria-hidden="true">{% for n in range(sr.of) %}<i class="{{ 'done' if n + 1 < sr.part else ('now' if n + 1 == sr.part else '') }}"></i>{% endfor %}</span><span class="count">Part {{ sr.part }} of {{ sr.of }}</span></div>
+{%- endmacro %}
+
+{%- macro icon(state) -%}
+{%- if state == 'good' -%}
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- elif state == 'bad' -%}
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg>
+{%- else -%}
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- endif -%}
 {%- endmacro %}
 
 {%- macro chunks(v) -%}
-<div class="chunks {{ v.state | default('bad') }}">
+{%- set c0 = v.cut | default([]) %}
+{%- set cuts = c0 if c0 is iterable else [c0] %}
+<div class="chunks {{ v.state | default('bad') }}{{ ' compact' if v.compact else '' }}">
   {%- if v.caption %}<div class="cap">{{ v.caption | inline }}</div>{% endif %}
   {%- for c in v.chunks %}
-  <div class="chunk"><div class="tag">Chunk {{ loop.index }}</div><div class="box">{{ c | chunktext }}</div></div>
-  {%- if v.cut and loop.index == v.cut %}
+  {%- set text = c.text if c is mapping else c %}
+  <div class="chunk"><div class="tag">Chunk {{ loop.index }}{% if c is mapping and c.meta %}<span class="meta">{{ c.meta }}</span>{% endif %}</div><div class="box">{{ text | chunktext }}</div></div>
+  {%- if loop.index in cuts %}
   <div class="cut"><span class="line"></span><span>{{ v.cut_label | default('Cut mid-sentence') }}</span><span class="line"></span></div>
   {%- endif %}
   {%- endfor %}
-  {%- if v.verdict %}<div class="verdict">{{ v.verdict | inline }}</div>{% endif %}
+  {%- if v.verdict %}<div class="verdict">{{ icon(v.state | default('bad')) }}<span>{{ v.verdict | inline }}</span></div>{% endif %}
 </div>
 {%- endmacro %}
 
@@ -37,6 +54,33 @@
   {%- if not loop.last %}<div class="down"></div>{% endif %}
   {%- endfor %}
 </div>
+{%- elif v.kind == 'steps' -%}
+<ol class="block steps">
+  {%- for s in v.steps %}
+  <li><span class="num">{{ loop.index }}</span><span class="say">{{ s | inline }}</span></li>
+  {%- endfor %}
+</ol>
+{%- elif v.kind == 'variants' -%}
+<div class="block variants">
+  {%- if v.caption %}<div class="cap">{{ v.caption | inline }}</div>{% endif %}
+  {%- for o in v.options %}
+  <div class="variant {{ o.state | default('neutral') }}">
+    <div class="vhead"><span class="vleft"><code class="setting">{{ o.setting }}</code>{% if o.tag %}<span class="vtag">{{ o.tag }}</span>{% endif %}</span>{% if o.note %}<span class="vnote">{{ icon(o.state | default('neutral')) }}<span>{{ o.note | inline }}</span></span>{% endif %}</div>
+    <div class="vbox">{{ o.output | chunktext }}</div>
+  </div>
+  {%- endfor %}
+</div>
+{%- elif v.kind == 'cards' -%}
+<div class="block cards">
+  {%- for c in v.cards %}
+  <div class="card2 {{ c.state | default('neutral') }}">
+    <div class="c2head">{{ icon(c.state | default('neutral')) }}<span>{{ c.title | inline }}</span></div>
+    <ul class="c2items">
+      {%- for it in c['items'] %}<li>{{ it | inline }}</li>{% endfor %}
+    </ul>
+  </div>
+  {%- endfor %}
+</div>
 {%- endif -%}
 {%- endmacro %}
 
@@ -47,22 +91,27 @@
   <div class="header">Shahbaz Khalid</div>
   <div class="stage">
     <div class="pill">{{ post.module }}</div>
-    {%- if post.series %}
-    <div class="series"><span>{{ post.series.name }}</span><span class="parts" aria-hidden="true">{% for n in range(post.series.of) %}<i class="{{ 'done' if n + 1 < post.series.part else ('now' if n + 1 == post.series.part else '') }}"></i>{% endfor %}</span><span class="count">Part {{ post.series.part }} of {{ post.series.of }}</span></div>
-    {%- endif %}
+    {%- if post.series %}{{ seriesline(post.series) }}{% endif %}
     <h1 class="cover-title" data-max-lines="{{ sl.max_lines | default(3) }}" data-min="120">{{ sl.title | titlehl }}</h1>
     <p class="hook">{{ sl.hook | inline }}</p>
+    {%- if sl.inside %}
+    <div class="inside">
+      <div class="inside-label">{{ sl.inside_label | default('Inside') }}</div>
+      <ul>{% for it in sl.inside %}<li>{{ it | inline }}</li>{% endfor %}</ul>
+    </div>
+    {%- endif %}
   </div>
-  <div class="footer"><span class="lead">{{ sl.footer | default('Cheat sheet on the last slide') }}</span>{{ strip(i) }}</div>
+  <div class="footer"><span class="lead">{{ sl.footer | default('Cheat sheet at the end') }}</span>{{ strip(i) }}</div>
 </section>
 {%- elif sl.type == 'body' %}
 <section class="slide body" id="slide-{{ loop.index }}" data-type="body">
   <div class="header">Shahbaz Khalid</div>
   <div class="stage">
-    <h2 class="body-title" data-max-lines="2" data-min="76">{{ sl.title | titlehl }}</h2>
+    <h2 class="body-title" data-max-lines="2" data-min="72">{{ sl.title | titlehl }}</h2>
     {%- if sl.text %}<p class="text">{{ sl.text | inline }}</p>{% endif %}
     <div class="main">
       {%- if sl.visuals %}<div class="visuals">{% for v in sl.visuals %}{{ visual(v) }}{% endfor %}</div>{% endif %}
+      {%- if sl.bullets %}<ul class="bullets">{% for b in sl.bullets %}<li>{{ b | inline }}</li>{% endfor %}</ul>{% endif %}
       {%- if sl.after %}<p class="text after">{{ sl.after | inline }}</p>{% endif %}
     </div>
   </div>
@@ -80,8 +129,21 @@
         <li><span class="tick"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>{{ r | inline }}</span></li>
         {%- endfor %}
       </ul>
-      <div class="card-foot">From the RAG series by Shahbaz Khalid</div>
+      <div class="card-foot">{{ sl.foot | default('From the RAG series by Shahbaz Khalid') }}</div>
     </div>
+  </div>
+  <div class="footer">{{ strip(i) }}</div>
+</section>
+{%- elif sl.type == 'teaser' %}
+<section class="slide teaser" id="slide-{{ loop.index }}" data-type="teaser">
+  <div class="header">Shahbaz Khalid</div>
+  <div class="stage">
+    <div class="next-label"><span>{{ sl.label | default('Tomorrow') }}</span><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="pill">{{ sl.module | default(post.module) }}</div>
+    {%- if sl.series %}{{ seriesline(sl.series) }}{% endif %}
+    <h2 class="teaser-title" data-max-lines="3" data-min="100">{{ sl.title | titlehl }}</h2>
+    {%- if sl.line %}<p class="line">{{ sl.line | inline }}</p>{% endif %}
+    <div class="today">{{ icon('good') }}<span>Today: {{ post.topic }}</span></div>
   </div>
   <div class="footer">{{ strip(i) }}</div>
 </section>

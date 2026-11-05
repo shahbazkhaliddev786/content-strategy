@@ -1,11 +1,13 @@
 # Cover labels and titles (format v3)
 
-What the cover of each post shows, top to bottom. Written once, approved by Shahbaz, copied exactly by the daily run. Covers RAG #16 onward (RAG #01–#15 are already posted).
+What the cover of each post shows, top to bottom. Written once, **approved by Shahbaz on 5 Nov 2026**, copied exactly by the daily run. Covers RAG #16 onward (RAG #01–#15 are already posted): 99 posts in 11 modules.
 
 1. **Module label** (black pill): the section heading below. Same wording on every post in the module.
 2. **Mini-series line** (only in a mini-series): `<name> · Part n/N`.
 3. **Cover title** (big): the post's topic. ` / ` marks the line breaks; the word in [brackets] gets the yellow highlight.
 4. **Hook line** (medium): written by the daily run for each post. Not in this file.
+
+The **next-day teaser** (the last slide of each post) shows the next row's module label, mini-series line and cover title, copied exactly; the renderer fills and checks them with `--cover-labels`.
 
 **Size:** L = 120px (max 2 lines, 11 characters each). M = 100px (max 3 lines, 13 characters each). The daily run must not post a cover whose title doesn't match this file.
 

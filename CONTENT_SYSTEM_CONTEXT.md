@@ -24,6 +24,11 @@ _Last updated: 5 Nov 2026_
 - Original post numbering never changes; `SERIES_ORDER.md` adds the global order on top.
 
 ## 3. Carousel format
+- **Format v3 (in progress, Nov 2026; not live yet).** Slides are rendered from post JSON by `renderer/render.py` (HTML/CSS + headless Chrome), not Canva. Rules: `renderer/README.md`; covers: `ai_engineering/rag/COVER_LABELS.md`; every post follows `KEYWORD_AND_AI_SEARCH_PLAYBOOK.md`.
+  - **LinkedIn: 10–15 pages** as one PDF document: cover (module label, mini-series line, topic title, hook, "Inside" list) → body slides → cheat sheet → **next-day teaser** (the next post's module label, mini-series line and cover title from `COVER_LABELS.md`, plus one linking line). LinkedIn allows up to 300 pages; 10–15 is our choice.
+  - **Instagram: at most 10 slides**, because Buffer publishes at most 10 images per Instagram carousel (Instagram's own app allows 20). Body slides marked `"instagram": false` are left out; the cover, cheat sheet and teaser always stay.
+  - Dense slides: a lead, a visual with real outputs (code, chunk views, settings side by side, steps, use/move-on cards) and up to 3 bullets; at most 85 words of reading text per slide; nothing under 24px.
+  - Every example output is real and re-checked by a script kept next to the post (for example `ai_engineering/rag/slides/RAG15_verify.py`).
 - Canva template: **"My final content template"** (1080×1350, 4:5), design ID `DAHUJv5JM8k`. Pages: 1 cover, 2–6 body, 7 teaser.
 - **Format v2 (from RAG #12, Nov 1 2026; decided in the Oct 31 2026 audit).** Full writing rules: `carousel-prompt-v2.md`; review rubric: `content_rubric.md`.
   - 6–8 slides: cover (technique kicker + hook ≤ 8 words) → 4–6 body slides shaped by the post type (failure → fix, decision guide, mechanism, comparison) → a cheat sheet, checklist or decision rule last.
@@ -73,4 +78,6 @@ _Last updated: 5 Nov 2026_
 - Posts in `ai_engineering/rag/ready/RAG<NN>.md` are pre-built and reviewed (or approved by Shahbaz); the daily run posts them verbatim.
 - Nov 4 2026 review: reach stayed flat (LinkedIn about 71 impressions per post; Instagram, X and Facebook near zero). Covers didn't say what the post was about, so v3 covers show the module label, the mini-series line with its part number, the post's topic as the big title, and the hook as a smaller line underneath.
 - Nov 5 2026: every post follows `KEYWORD_AND_AI_SEARCH_PLAYBOOK.md`, based on the research doc [AI engineering on LinkedIn: trending keywords and AI search](https://claude.ai/artifact/VedncmQoYK8jx8WLCrsq4e).
+- Nov 5 2026 (Shahbaz): `COVER_LABELS.md` approved. Keep all 4 channels (LinkedIn, Instagram, Facebook, X); fully automatic posting at 8:00 AM PKT, 7 days a week.
+- Nov 5 2026 (Shahbaz): v3 slides carry more content (about 50 words per body slide instead of 20). LinkedIn documents run 10–15 pages and end with a next-day teaser slide, which brings back the teaser the Oct 31 audit removed. Instagram stays at 10 slides, Buffer's limit for Instagram carousels.
 - Success measures for cycle 1 (Nov 1–14): median LinkedIn impressions at 72 h ≥ 100 (baseline 66), ≥ 1 save or send per post, engagement ≥ 4% (baseline 2.3%).

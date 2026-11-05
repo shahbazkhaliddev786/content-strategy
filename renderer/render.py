@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Render a carousel post (JSON) into PNG slides and one PDF with headless Chrome.
+"""Render a carousel post (JSON) into the LinkedIn PDF and the Instagram slide set, with headless Chrome.
 
 Usage:
     python3 renderer/render.py ai_engineering/rag/slides/RAG15.json --out out/RAG15
     python3 renderer/render.py POST.json --out DIR --cover-labels ai_engineering/rag/COVER_LABELS.md
 
-Writes slide_01.png ... slide_NN.png (1080x1350), <post>.pdf and report.json to DIR.
+Writes to DIR:
+    linkedin/slide_01.png ... and linkedin/<post>.pdf   every slide (10-15), posted as a LinkedIn document
+    instagram/slide_01.png ...                           at most 10 slides (Buffer's Instagram limit):
+                                                         slides marked "instagram": false are left out
+    report.json                                          checks for both sets
 Exits with code 1 when any check fails; report.json says which.
 """
 import argparse
@@ -20,24 +24,31 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent
 MIN_FONT_PX = 24          # smallest text allowed anywhere on a slide
-MAX_BODY_WORDS = 40       # text + after, per body slide
-SLIDES_MIN, SLIDES_MAX = 6, 8
+MAX_BODY_WORDS = 85       # all prose on a body slide (code and example chunks don't count)
+SLIDES_MIN, SLIDES_MAX = 10, 15   # LinkedIn document, teaser included
+INSTAGRAM_MAX = 10                # Buffer publishes at most 10 images per Instagram carousel
 
 # ---------- text filters ----------
 
-def _code_spans(s: str) -> str:
+def _keep_hyphens(html: str) -> str:
+    """Hyphenated words (GPT-2, parent-document) never break at the hyphen."""
+    return re.sub(r"(?<![\w-])(\w+(?:-\w+)+)", r'<span class="nw">\1</span>', html)
+
+
+def _code_spans(s: str, nowrap: bool = False) -> str:
     """Escape text and turn `code` into inline code spans."""
+    plain = (lambda t: _keep_hyphens(str(escape(t)))) if nowrap else (lambda t: str(escape(t)))
     out, pos = [], 0
     for m in re.finditer(r"`([^`]+)`", s):
-        out.append(str(escape(s[pos:m.start()])))
+        out.append(plain(s[pos:m.start()]))
         out.append(f'<code class="ic">{escape(m.group(1))}</code>')
         pos = m.end()
-    out.append(str(escape(s[pos:])))
+    out.append(plain(s[pos:]))
     return "".join(out)
 
 
 def inline(s) -> Markup:
-    return Markup(_code_spans(str(s or "")))
+    return Markup(_code_spans(str(s or ""), nowrap=True))
 
 
 def titlehl(s) -> Markup:
@@ -153,43 +164,63 @@ def _words(s: str) -> int:
     return len(re.findall(r"[\w'\"().=,\\-]+", re.sub(r"`[^`]*`", "x", s or "")))
 
 
-def _cover_label_row(path: Path, post_id: str):
-    num = re.sub(r"\D", "", post_id)
+def _prose(slide: dict) -> list[str]:
+    """Every piece of reading text on a body slide (not code, not example chunks)."""
+    out = [slide.get("text", ""), slide.get("after", ""), *slide.get("bullets", [])]
+    for v in slide.get("visuals", []):
+        kind = v.get("kind")
+        if kind == "steps":
+            out += v.get("steps", [])
+        elif kind == "variants":
+            out += [o.get("note", "") for o in v.get("options", [])]
+        elif kind == "cards":
+            for c in v.get("cards", []):
+                out += [c.get("title", ""), *c.get("items", [])]
+        elif kind == "chunks":
+            out.append(v.get("verdict", ""))
+        elif kind == "cascade":
+            out += [s.get("note", "") for s in v.get("steps", [])]
+    return out
+
+
+def _cover_labels(path: Path) -> dict[int, dict]:
+    """COVER_LABELS.md rows by post number, with the module label (the section heading) they sit under."""
+    rows, module = {}, None
     for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            module = line[3:].strip()
+            continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) >= 3 and re.sub(r"\D", "", cells[0]) == num and cells[0].startswith("RAG"):
-            return cells
-    return None
+        if len(cells) >= 3 and re.fullmatch(r"RAG #\d+", cells[0]):
+            rows[int(cells[0][5:])] = {"module": module, "series_line": cells[1], "title": cells[2]}
+    return rows
 
 
-def render(post_path: Path, out_dir: Path, cover_labels: Path | None) -> dict:
-    post = json.loads(post_path.read_text(encoding="utf-8"))
-    out_dir.mkdir(parents=True, exist_ok=True)
+def _series_line(series) -> str:
+    return f"{series['name']} · Part {series['part']}/{series['of']}" if series else "—"
 
-    env = Environment(loader=FileSystemLoader(ROOT / "templates"), autoescape=True)
-    env.filters.update(inline=inline, titlehl=titlehl, chunktext=chunktext, codehl=codehl)
-    html = env.get_template("deck.html.j2").render(post=post)
-    html = html.replace('href="style.css"', f'href="{(ROOT / "templates" / "style.css").as_uri()}"')
-    deck = out_dir / "deck.html"
-    deck.write_text(html, encoding="utf-8")
 
-    with sync_playwright() as p:
-        browser = _launch(p)
-        page = browser.new_page(viewport={"width": 1080, "height": 1350}, device_scale_factor=1)
-        page.goto(deck.as_uri())
-        slides = page.evaluate(FIT_JS)
-        for i, el in enumerate(page.query_selector_all(".slide"), start=1):
-            el.screenshot(path=str(out_dir / f"slide_{i:02d}.png"))
-        slug = re.sub(r"\W+", "", post.get("post", "post")) or "post"
-        page.pdf(path=str(out_dir / f"{slug}.pdf"), width="1080px", height="1350px", print_background=True)
-        browser.close()
+def _parse_series_line(line: str):
+    m = re.fullmatch(r"(.+?) · Part (\d+)/(\d+)", line or "")
+    return {"name": m.group(1), "part": int(m.group(2)), "of": int(m.group(3))} if m else None
 
+
+def _fill_teaser(post: dict, labels: dict[int, dict]) -> None:
+    """Fill the teaser's module, mini-series line and title from the next post's COVER_LABELS row."""
+    teaser = next((s for s in post["slides"] if s.get("type") == "teaser"), None)
+    nxt = labels.get(int(re.sub(r"\D", "", post.get("post", "")) or 0) + 1)
+    if teaser is None or nxt is None:
+        return
+    teaser.setdefault("module", nxt["module"])
+    teaser.setdefault("title", nxt["title"])
+    if "series" not in teaser:
+        teaser["series"] = _parse_series_line(nxt["series_line"])
+
+
+def _check_slides(specs: list[dict], fits: list[dict], label: str) -> list[str]:
     failures = []
-    n = len(post["slides"])
-    if not SLIDES_MIN <= n <= SLIDES_MAX:
-        failures.append(f"post has {n} slides; allowed {SLIDES_MIN}-{SLIDES_MAX}")
-    for spec, r in zip(post["slides"], slides):
-        sid = r["id"]
+    for spec, r in zip(specs, fits):
+        sid = f"{label} {r['id']}"
         if r.get("title_lines", 0) > r.get("title_max_lines", 99):
             failures.append(f"{sid}: title runs to {r['title_lines']} lines (max {r['title_max_lines']})")
         if r.get("title_fits") is False:
@@ -201,27 +232,98 @@ def render(post_path: Path, out_dir: Path, cover_labels: Path | None) -> dict:
         if r["text_outside_margins"]:
             failures.append(f"{sid}: text crosses the slide margins")
         if spec.get("type") == "body":
-            words = _words(spec.get("text", "")) + _words(spec.get("after", ""))
+            words = sum(_words(t) for t in _prose(spec))
             r["body_words"] = words
             if words > MAX_BODY_WORDS:
                 failures.append(f"{sid}: {words} words of body text (max {MAX_BODY_WORDS})")
+    return failures
 
-    if cover_labels:
-        row = _cover_label_row(cover_labels, post.get("post", ""))
+
+def _check_order(slides: list[dict], label: str) -> list[str]:
+    """Cover first; then body slides; then the cheat sheet; then the teaser, if there is one."""
+    types = [s.get("type") for s in slides]
+    failures = []
+    if not types or types[0] != "cover":
+        failures.append(f"{label}: the first slide must be the cover")
+    closing = ["cheatsheet", "teaser"] if "teaser" in types else ["cheatsheet"]
+    if types[-len(closing):] != closing:
+        failures.append(f"{label}: must end with {' then '.join(closing)}")
+    if types.count("cheatsheet") != 1 or types.count("teaser") > 1 or types.count("cover") != 1:
+        failures.append(f"{label}: needs one cover, one cheat sheet and at most one teaser")
+    return failures
+
+
+def render(post_path: Path, out_dir: Path, cover_labels: Path | None) -> dict:
+    post = json.loads(post_path.read_text(encoding="utf-8"))
+    labels = _cover_labels(cover_labels) if cover_labels else {}
+    if labels:
+        _fill_teaser(post, labels)
+
+    cuts = {
+        "linkedin": post["slides"],
+        "instagram": [s for s in post["slides"] if s.get("instagram", True)],
+    }
+    env = Environment(loader=FileSystemLoader(ROOT / "templates"), autoescape=True)
+    env.filters.update(inline=inline, titlehl=titlehl, chunktext=chunktext, codehl=codehl)
+    css_uri = (ROOT / "templates" / "style.css").as_uri()
+    slug = re.sub(r"\W+", "", post.get("post", "post")) or "post"
+
+    fits = {}
+    with sync_playwright() as p:
+        browser = _launch(p)
+        page = browser.new_page(viewport={"width": 1080, "height": 1350}, device_scale_factor=1)
+        for name, slides in cuts.items():
+            d = out_dir / name
+            d.mkdir(parents=True, exist_ok=True)
+            for old in d.glob("slide_*.png"):
+                old.unlink()
+            html = env.get_template("deck.html.j2").render(post=dict(post, slides=slides))
+            deck = d / "deck.html"
+            deck.write_text(html.replace('href="style.css"', f'href="{css_uri}"'), encoding="utf-8")
+            page.goto(deck.as_uri())
+            fits[name] = page.evaluate(FIT_JS)
+            for i, el in enumerate(page.query_selector_all(".slide"), start=1):
+                el.screenshot(path=str(d / f"slide_{i:02d}.png"))
+            if name == "linkedin":
+                page.pdf(path=str(d / f"{slug}.pdf"), width="1080px", height="1350px", print_background=True)
+        browser.close()
+
+    failures = []
+    n, n_ig = len(cuts["linkedin"]), len(cuts["instagram"])
+    if not SLIDES_MIN <= n <= SLIDES_MAX:
+        failures.append(f"LinkedIn has {n} slides; allowed {SLIDES_MIN}-{SLIDES_MAX}, teaser included")
+    if n_ig > INSTAGRAM_MAX:
+        failures.append(f"Instagram has {n_ig} slides; max {INSTAGRAM_MAX}. Mark more body slides \"instagram\": false")
+    for name, slides in cuts.items():
+        failures += _check_order(slides, name)
+        failures += _check_slides(slides, fits[name], name)
+
+    if labels:
+        num = int(re.sub(r"\D", "", post.get("post", "")) or 0)
+        row = labels.get(num)
         cover = next((s for s in post["slides"] if s.get("type") == "cover"), {})
         if row is None:
             failures.append(f"{post.get('post')}: no row in {cover_labels.name}")
         else:
-            expected_series = row[1]
-            expected_title = row[2]
-            if cover.get("title") != expected_title:
-                failures.append(f"cover title '{cover.get('title')}' doesn't match COVER_LABELS '{expected_title}'")
-            series = post.get("series")
-            got_series = f"{series['name']} · Part {series['part']}/{series['of']}" if series else "—"
-            if got_series != expected_series:
-                failures.append(f"mini-series line '{got_series}' doesn't match COVER_LABELS '{expected_series}'")
+            if cover.get("title") != row["title"]:
+                failures.append(f"cover title '{cover.get('title')}' doesn't match COVER_LABELS '{row['title']}'")
+            if _series_line(post.get("series")) != row["series_line"]:
+                failures.append(f"mini-series line '{_series_line(post.get('series'))}' doesn't match COVER_LABELS '{row['series_line']}'")
+        nxt = labels.get(num + 1)
+        teaser = next((s for s in post["slides"] if s.get("type") == "teaser"), None)
+        if nxt and teaser is None:
+            failures.append(f"missing the next-day teaser (next post: RAG #{num + 1:02d})")
+        if nxt and teaser:
+            if teaser.get("title") != nxt["title"]:
+                failures.append(f"teaser title '{teaser.get('title')}' doesn't match COVER_LABELS '{nxt['title']}'")
+            if _series_line(teaser.get("series")) != nxt["series_line"]:
+                failures.append(f"teaser mini-series line doesn't match COVER_LABELS '{nxt['series_line']}'")
+            if teaser.get("module") != nxt["module"]:
+                failures.append(f"teaser module '{teaser.get('module')}' doesn't match COVER_LABELS '{nxt['module']}'")
 
-    report = {"post": post.get("post"), "ok": not failures, "failures": failures, "slides": slides}
+    report = {"post": post.get("post"), "ok": not failures, "failures": failures,
+              "counts": {"linkedin": n, "instagram": n_ig},
+              "slides": fits["linkedin"], "instagram_slides": fits["instagram"]}
     (out_dir / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     return report
 
@@ -233,7 +335,7 @@ def main():
     ap.add_argument("--cover-labels", type=Path)
     a = ap.parse_args()
     report = render(a.post, a.out, a.cover_labels)
-    print(json.dumps({"ok": report["ok"], "failures": report["failures"]}, indent=2))
+    print(json.dumps({"ok": report["ok"], "counts": report["counts"], "failures": report["failures"]}, indent=2))
     sys.exit(0 if report["ok"] else 1)
 
 
