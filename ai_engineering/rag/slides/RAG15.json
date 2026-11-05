@@ -1,0 +1,110 @@
+{
+  "post": "RAG #15",
+  "module": "RAG chunking",
+  "topic": "Recursive splitting",
+  "series": null,
+  "slides": [
+    {
+      "type": "cover",
+      "title": "[Recursive] / splitting",
+      "hook": "Why it still cuts sentences in half, and the two settings that stop it"
+    },
+    {
+      "type": "body",
+      "title": "[Biggest] separator / first",
+      "text": "Any piece still over `chunk_size` is split again with the next separator. Small neighbours are merged back up to the limit.",
+      "visuals": [
+        {
+          "kind": "cascade",
+          "steps": [
+            {
+              "code": "\"\\n\\n\"",
+              "label": "Paragraphs",
+              "note": "tried first"
+            },
+            {
+              "code": "\"\\n\"",
+              "label": "Lines"
+            },
+            {
+              "code": "\" \"",
+              "label": "Spaces"
+            },
+            {
+              "code": "\"\"",
+              "label": "Characters",
+              "note": "last resort"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "No [sentence] break / by default",
+      "text": "LangChain's default separators are `\\n\\n`, `\\n`, a space and `\"\"`. One long paragraph falls straight to spaces.",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "caption": "chunk_size=60",
+          "chunks": [
+            "…30 days of purchase. !!After 30!!",
+            "!!days,!! refunds need manager approval…"
+          ],
+          "cut": 1,
+          "cut_label": "Cut mid-sentence"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Add a sentence / [separator]",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "separators=[\"\\n\\n\", \"\\n\", {{\". \"}}, \" \", \"\"]"
+        },
+        {
+          "kind": "chunks",
+          "state": "good",
+          "caption": "chunk_size=60",
+          "chunks": [
+            "…30 days of purchase!!.!!",
+            "!!After 30 days,!! refunds need manager approval…"
+          ],
+          "verdict": "Each refund rule is now its own chunk."
+        }
+      ],
+      "after": "Set `keep_separator=\"end\"`, or the period opens the next chunk instead of closing its sentence."
+    },
+    {
+      "type": "body",
+      "title": "Sizes count / [characters]",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "The defaults",
+          "code": "RecursiveCharacterTextSplitter(\n    chunk_size=4000,\n    chunk_overlap=200,\n    length_function=len,\n)"
+        },
+        {
+          "kind": "code",
+          "label": "Counts tiktoken tokens instead",
+          "code": "(RecursiveCharacterTextSplitter\n    .from_tiktoken_encoder())"
+        }
+      ],
+      "after": "Your embedder reads tokens. Use the second form, or pass your model's tokenizer as `length_function`."
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Biggest separator first, then recurse",
+        "The default list has no sentence break",
+        "Add `\". \"` between `\"\\n\"` and `\" \"`",
+        "`keep_separator=\"end\"` keeps the period",
+        "Sizes count characters by default"
+      ]
+    }
+  ]
+}

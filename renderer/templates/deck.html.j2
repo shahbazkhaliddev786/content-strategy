@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ post.post }}: {{ post.topic }}</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+{%- set total = post.slides | length %}
+
+{%- macro strip(i) -%}
+<div class="strip" aria-hidden="true">{% for n in range(total) %}<i class="{{ 'on' if n == i else '' }}"></i>{% endfor %}</div>
+{%- endmacro %}
+
+{%- macro chunks(v) -%}
+<div class="chunks {{ v.state | default('bad') }}">
+  {%- if v.caption %}<div class="cap">{{ v.caption | inline }}</div>{% endif %}
+  {%- for c in v.chunks %}
+  <div class="chunk"><div class="tag">Chunk {{ loop.index }}</div><div class="box">{{ c | chunktext }}</div></div>
+  {%- if v.cut and loop.index == v.cut %}
+  <div class="cut"><span class="line"></span><span>{{ v.cut_label | default('Cut mid-sentence') }}</span><span class="line"></span></div>
+  {%- endif %}
+  {%- endfor %}
+  {%- if v.verdict %}<div class="verdict">{{ v.verdict | inline }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{%- macro visual(v) -%}
+{%- if v.kind == 'code' -%}
+<div class="block">{% if v.label %}<div class="label">{{ v.label | inline }}</div>{% endif %}<pre class="code">{{ v.code | codehl }}</pre></div>
+{%- elif v.kind == 'chunks' -%}
+<div class="block">{% if v.label %}<div class="label">{{ v.label | inline }}</div>{% endif %}{{ chunks(v) }}</div>
+{%- elif v.kind == 'cascade' -%}
+<div class="block cascade">
+  {%- for s in v.steps %}
+  <div class="step"><span class="chip">{{ s.code }}</span><span class="what">{{ s.label | inline }}</span>{% if s.note %}<span class="why">{{ s.note | inline }}</span>{% endif %}</div>
+  {%- if not loop.last %}<div class="down"></div>{% endif %}
+  {%- endfor %}
+</div>
+{%- endif -%}
+{%- endmacro %}
+
+{%- for sl in post.slides %}
+{%- set i = loop.index0 %}
+{%- if sl.type == 'cover' %}
+<section class="slide cover" id="slide-{{ loop.index }}" data-type="cover">
+  <div class="header">Shahbaz Khalid</div>
+  <div class="stage">
+    <div class="pill">{{ post.module }}</div>
+    {%- if post.series %}
+    <div class="series"><span>{{ post.series.name }}</span><span class="parts" aria-hidden="true">{% for n in range(post.series.of) %}<i class="{{ 'done' if n + 1 < post.series.part else ('now' if n + 1 == post.series.part else '') }}"></i>{% endfor %}</span><span class="count">Part {{ post.series.part }} of {{ post.series.of }}</span></div>
+    {%- endif %}
+    <h1 class="cover-title" data-max-lines="{{ sl.max_lines | default(3) }}" data-min="120">{{ sl.title | titlehl }}</h1>
+    <p class="hook">{{ sl.hook | inline }}</p>
+  </div>
+  <div class="footer"><span class="lead">{{ sl.footer | default('Cheat sheet on the last slide') }}</span>{{ strip(i) }}</div>
+</section>
+{%- elif sl.type == 'body' %}
+<section class="slide body" id="slide-{{ loop.index }}" data-type="body">
+  <div class="header">Shahbaz Khalid</div>
+  <div class="stage">
+    <h2 class="body-title" data-max-lines="2" data-min="76">{{ sl.title | titlehl }}</h2>
+    {%- if sl.text %}<p class="text">{{ sl.text | inline }}</p>{% endif %}
+    <div class="main">
+      {%- if sl.visuals %}<div class="visuals">{% for v in sl.visuals %}{{ visual(v) }}{% endfor %}</div>{% endif %}
+      {%- if sl.after %}<p class="text after">{{ sl.after | inline }}</p>{% endif %}
+    </div>
+  </div>
+  <div class="footer"><span>{{ post.topic }}</span>{{ strip(i) }}</div>
+</section>
+{%- elif sl.type == 'cheatsheet' %}
+<section class="slide cheatsheet" id="slide-{{ loop.index }}" data-type="cheatsheet">
+  <div class="header">Shahbaz Khalid</div>
+  <div class="stage">
+    <div class="card">
+      <div class="card-top"><span class="pill">{{ post.module }}</span><span class="topic">{{ post.topic }}</span></div>
+      <h2 class="card-title" data-max-lines="1" data-min="80">{{ sl.title | default('[Cheat] sheet') | titlehl }}</h2>
+      <ul class="rows">
+        {%- for r in sl.rows %}
+        <li><span class="tick"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>{{ r | inline }}</span></li>
+        {%- endfor %}
+      </ul>
+      <div class="card-foot">From the RAG series by Shahbaz Khalid</div>
+    </div>
+  </div>
+  <div class="footer">{{ strip(i) }}</div>
+</section>
+{%- endif %}
+{%- endfor %}
+</body>
+</html>
