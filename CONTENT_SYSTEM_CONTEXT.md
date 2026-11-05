@@ -29,6 +29,8 @@ _Last updated: 5 Nov 2026_
   - **Instagram: at most 10 slides**, because Buffer publishes at most 10 images per Instagram carousel (Instagram's own app allows 20). Body slides marked `"instagram": false` are left out; the cover, cheat sheet and teaser always stay.
   - Dense slides: a lead, a visual with real outputs (code, chunk views, settings side by side, steps, use/move-on cards) and up to 3 bullets; at most 85 words of reading text per slide; nothing under 24px.
   - Every example output is real and re-checked by a script kept next to the post (for example `ai_engineering/rag/slides/RAG15_verify.py`).
+  - Writing rules: `carousel-prompt-v3.md`; review: `content_rubric.md` (v3 checks); the scheduled task's prompt: `routine-prompt-v3.md`.
+  - Hosting: the run puts each day's PNGs and PDF on the `rendered` branch (replaced daily) and gives Buffer and Metricool its raw.githubusercontent.com links; the repo is public. Rendered images are never committed to main.
 - Canva template: **"My final content template"** (1080×1350, 4:5), design ID `DAHUJv5JM8k`. Pages: 1 cover, 2–6 body, 7 teaser.
 - **Format v2 (from RAG #12, Nov 1 2026; decided in the Oct 31 2026 audit).** Full writing rules: `carousel-prompt-v2.md`; review rubric: `content_rubric.md`.
   - 6–8 slides: cover (technique kicker + hook ≤ 8 words) → 4–6 body slides shaped by the post type (failure → fix, decision guide, mechanism, comparison) → a cheat sheet, checklist or decision rule last.

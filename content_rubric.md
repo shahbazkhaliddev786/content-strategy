@@ -1,6 +1,6 @@
-# Content rubric — review before publishing (format v2)
+# Content rubric — review before publishing (format v3)
 
-Used by the daily run from RAG #12 onward. A reviewer that did not write the post (a fresh subagent where available) scores the draft from the slide text and captions only, as a working software/ML engineer or technical founder scrolling LinkedIn on a phone.
+Used by the daily run from RAG #16 onward (format v3; RAG #12–#15 used the v2 checks). A reviewer that did not write the post (a fresh subagent where available) scores the draft from the slide text and captions only, as a working software/ML engineer or technical founder scrolling LinkedIn on a phone.
 
 Calibration: 3 = a competent, average technical LinkedIn post · 5 = among the best technical posts of the year · 1 = actively weak.
 
@@ -14,17 +14,19 @@ Calibration: 3 = a competent, average technical LinkedIn post · 5 = among the b
 | Proof | abstract prose | a concrete example in words | shows it: code, output, before/after, diagram |
 | Human voice | many AI tells; could be anyone | a few tells, some opinion | a specific engineer: concrete detail, a stance with reasons |
 | Structure fit | template forces filler slides | mostly fits | every slide earns its place |
-| Mobile read | walls of text | readable | 2–3 seconds per slide |
+| Mobile read | walls of text | readable | each slide scans as title → lead → visual → up to 3 bullets |
 | Standalone | needs other posts | mostly | complete for someone seeing it cold |
 | Save-worthy | nothing to keep | one takeaway | a reusable checklist, decision table or snippet |
 
 **Accuracy (gate):** any wrong or overclaimed technical statement, invented number or unverifiable API name fails the post. Quote it and give the correction.
 
 ## Mechanical checks (each must pass)
-- 6–8 slides; cover has a kicker naming the technique; hook ≤ 8 words.
-- Each body slide 25–40 words; last slide is a cheat sheet, checklist or decision rule.
-- No agenda slide, glossary slide or "Next:" teaser slide.
-- None of the banned patterns in carousel-prompt-v2.md (VOICE).
+- 10–15 slides for LinkedIn and at most 10 for Instagram, in the order cover → body → cheat sheet → teaser.
+- The cover's module label, mini-series line and title match COVER_LABELS.md; the teaser matches the next row.
+- Each body slide has at most 85 words of reading text and at least one visual; every example output comes from a real run (RAG<NN>_verify.py prints ALL PASS).
+- The cover's "Inside" list only promises slides that Instagram also gets.
+- No agenda slide or glossary slide.
+- None of the banned patterns in carousel-prompt-v3.md (VOICE).
 - Hook differs from the last 10 in hooks_log.md (opening word and pattern).
 - Caption has no "In this carousel:"; exactly 3 LinkedIn hashtags, all on-topic; every tweet ≤ 280 characters.
 
