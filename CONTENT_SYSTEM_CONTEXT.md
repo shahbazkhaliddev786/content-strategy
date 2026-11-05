@@ -1,8 +1,10 @@
 # Content System — Context & Decisions
 
-Single source of context for Shahbaz Khalid's daily AI-engineering content system. Upload this file to the project, alongside `carousel-prompt-v2.md` and `content_rubric.md`.
+Single source of context for Shahbaz Khalid's daily AI-engineering content system. Upload this file to the project, alongside `carousel-prompt-v2.md`, `content_rubric.md` and `KEYWORD_AND_AI_SEARCH_PLAYBOOK.md`.
 
-_Last updated: 31 Oct 2026_
+**Every post follows `KEYWORD_AND_AI_SEARCH_PLAYBOOK.md`** (primary keyword, AI-search writing rules, hashtags, pre-publish checks).
+
+_Last updated: 5 Nov 2026_
 
 ---
 
@@ -61,6 +63,7 @@ _Last updated: 31 Oct 2026_
 - ✅ Content audit done (Oct 31): [RAG Carousel Content Audit](https://claude.ai/artifact/Vc98XHW2sMrqrzvVSqoytw). Baseline: LinkedIn median 66 impressions per post; X, Facebook and Instagram close to zero; 0 profile views and 0 followers from #06–#08.
 - ✅ Format v2 approved (Oct 31): runs from RAG #12 (Nov 1). RAG #14 was built and approved in advance (`ai_engineering/rag/ready/RAG14.md`, Canva DAHZkN_7xHg).
 - ⏳ Profile update (banner, headline, Featured) by the user
+- ⏸ Daily run paused on Nov 4 2026 (after RAG #15) while format v3 is built: topic-first covers from `ai_engineering/rag/COVER_LABELS.md` and the keyword playbook. Next post: RAG #16.
 
 ## 8. Decisions log
 - Slides use the 7-part body structure for every strategy; mini-series for multi-strategy topics (v1; replaced by format v2 from #12)
@@ -68,4 +71,6 @@ _Last updated: 31 Oct 2026_
 - Slide 10's subtext uses a different font (a Canva connector limit); fix manually or drop the line
 - Oct 31 2026 audit decisions: daily posting continues (no pause); format v2 from #12, starting Nov 1 (cover kicker, no agenda/glossary/teaser/slogans, 25–35-word slides, cheat-sheet last slide, rotating captions, research + rubric review); no creator benchmarks; no personal-experience input for now; curriculum order unchanged. Channels: keep all 4 (LinkedIn, Instagram, Facebook, X) as they are. Pending: weekend review loop, visual slides (cycle 2), posting-time test (cycle 3).
 - Posts in `ai_engineering/rag/ready/RAG<NN>.md` are pre-built and reviewed (or approved by Shahbaz); the daily run posts them verbatim.
+- Nov 4 2026 review: reach stayed flat (LinkedIn about 71 impressions per post; Instagram, X and Facebook near zero). Covers didn't say what the post was about, so v3 covers show the module label, the mini-series line with its part number, the post's topic as the big title, and the hook as a smaller line underneath.
+- Nov 5 2026: every post follows `KEYWORD_AND_AI_SEARCH_PLAYBOOK.md`, based on the research doc [AI engineering on LinkedIn: trending keywords and AI search](https://claude.ai/artifact/VedncmQoYK8jx8WLCrsq4e).
 - Success measures for cycle 1 (Nov 1–14): median LinkedIn impressions at 72 h ≥ 100 (baseline 66), ≥ 1 save or send per post, engagement ≥ 4% (baseline 2.3%).
