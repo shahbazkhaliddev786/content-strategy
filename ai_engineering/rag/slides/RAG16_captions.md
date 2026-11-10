@@ -1,4 +1,4 @@
-Status: draft (built 10 Nov 2026 as the format v3 test run; waiting for Shahbaz's approval)
+Status: approved by Shahbaz 10 Nov 2026 (built as the format v3 test run)
 
 ## LinkedIn (1086 chars)
 

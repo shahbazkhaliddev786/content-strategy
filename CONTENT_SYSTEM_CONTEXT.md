@@ -70,7 +70,7 @@ _Last updated: 5 Nov 2026_
 - ✅ Content audit done (Oct 31): [RAG Carousel Content Audit](https://claude.ai/artifact/Vc98XHW2sMrqrzvVSqoytw). Baseline: LinkedIn median 66 impressions per post; X, Facebook and Instagram close to zero; 0 profile views and 0 followers from #06–#08.
 - ✅ Format v2 approved (Oct 31): runs from RAG #12 (Nov 1). RAG #14 was built and approved in advance (`ai_engineering/rag/ready/RAG14.md`, Canva DAHZkN_7xHg).
 - ⏳ Profile update (banner, headline, Featured) by the user
-- ⏸ Daily run paused on Nov 4 2026 (after RAG #15) while format v3 is built: topic-first covers from `ai_engineering/rag/COVER_LABELS.md` and the keyword playbook. Next post: RAG #16.
+- ▶ Format v3 live from Nov 11 2026 (daily at 7:58 AM PKT, all 4 channels). Paused Nov 4–10 while it was built. RAG #16 was built and approved in advance as the v3 test run (Buffer drafts tested, then deleted).
 
 ## 8. Decisions log
 - Slides use the 7-part body structure for every strategy; mini-series for multi-strategy topics (v1; replaced by format v2 from #12)
