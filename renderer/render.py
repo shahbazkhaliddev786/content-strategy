@@ -128,6 +128,14 @@ async () => {
     const over = () => stage.scrollHeight > stage.clientHeight + 1 || pres.some(p => p.scrollWidth > p.clientWidth + 1);
     let s = 1;
     while (over() && s > 0.8) { s = Math.round((s - 0.04) * 100) / 100; slide.style.setProperty('--s', s); }
+    if (t && over()) {
+      // still too tall at the smallest scale: shrink the big title too, down to its minimum
+      let size = parseFloat(getComputedStyle(t).fontSize);
+      const min = +t.dataset.min;
+      while (over() && size > min) { size -= 6; t.style.fontSize = size + 'px'; }
+      r.title_px = size;
+      r.title_lines = Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight));
+    }
     r.scale = s;
     r.overflow = over();
     const sb = slide.getBoundingClientRect();
@@ -180,6 +188,8 @@ def _prose(slide: dict) -> list[str]:
             out.append(v.get("verdict", ""))
         elif kind == "cascade":
             out += [s.get("note", "") for s in v.get("steps", [])]
+        elif kind == "bars":
+            out += [l.get("label", "") for l in v.get("lines", [])]
     return out
 
 

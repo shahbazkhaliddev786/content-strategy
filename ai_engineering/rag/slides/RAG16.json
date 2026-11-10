@@ -1,0 +1,325 @@
+{
+  "post": "RAG #16",
+  "module": "RAG chunking",
+  "topic": "Semantic chunking",
+  "series": null,
+  "slides": [
+    {
+      "type": "cover",
+      "title": "[Semantic] / chunking",
+      "hook": "Cut where the meaning jumps between sentences. The defaults cut one-topic documents too.",
+      "inside": [
+        "How it picks where to cut",
+        "Real distances from a real run",
+        "Fixes for the defaults that bite",
+        "Is it worth the embedding cost?"
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Cut where the / [meaning] jumps",
+      "text": "Recursive splitting cuts on separators: paragraph breaks, line breaks, spaces. Semantic chunking compares neighbouring sentences and cuts where they stop being similar. LangChain's `SemanticChunker` does it in 5 steps:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Split the text into sentences with a regex.",
+            "Group each sentence with its neighbours (`buffer_size=1`: one before, one after).",
+            "Embed every group.",
+            "Measure the cosine distance from each group to the next.",
+            "Cut where the distance is above a threshold: by default, the 95th percentile of all distances."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The default cuts / the top [5%]",
+      "text": "8 sentences, one topic: refunds. The distance between each sentence group and the next, from a real run:",
+      "visuals": [
+        {
+          "kind": "bars",
+          "caption": "Cosine distance, group n to n+1",
+          "max": 0.045,
+          "rows": [
+            {
+              "label": "1-2",
+              "value": 0.0187,
+              "text": "0.019"
+            },
+            {
+              "label": "2-3",
+              "value": 0.0234,
+              "text": "0.023"
+            },
+            {
+              "label": "3-4",
+              "value": 0.0157,
+              "text": "0.016"
+            },
+            {
+              "label": "4-5",
+              "value": 0.0131,
+              "text": "0.013"
+            },
+            {
+              "label": "5-6",
+              "value": 0.0332,
+              "text": "0.033",
+              "state": "bad"
+            },
+            {
+              "label": "6-7",
+              "value": 0.0253,
+              "text": "0.025"
+            },
+            {
+              "label": "7-8",
+              "value": 0.0105,
+              "text": "0.010"
+            }
+          ],
+          "lines": [
+            {
+              "value": 0.0308,
+              "label": "95th percentile (default): cuts after sentence 5",
+              "state": "bad"
+            },
+            {
+              "value": 0.0419,
+              "label": "mean + 3 × std: no cut",
+              "state": "good"
+            }
+          ]
+        }
+      ],
+      "after": "A percentile is relative, so the biggest gaps get cut whether or not the topic changes. Embeddings in this run: spaCy's en_core_web_md vectors."
+    },
+    {
+      "type": "body",
+      "title": "Choose what counts / as a [jump]",
+      "text": "`breakpoint_threshold_type` sets the cut-off. The same 8 refund sentences, each type at its default amount:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "\"percentile\"",
+              "tag": "default, 95",
+              "output": "!!2 chunks!!: cut after sentence 5",
+              "state": "bad",
+              "note": "Top 5% of gaps"
+            },
+            {
+              "setting": "\"gradient\"",
+              "tag": "95",
+              "output": "!!2 chunks!!: cut after sentence 4",
+              "state": "bad",
+              "note": "Top 5% of distance changes"
+            },
+            {
+              "setting": "\"standard_deviation\"",
+              "tag": "3",
+              "output": "1 chunk",
+              "state": "good",
+              "note": "Mean + 3 × std"
+            },
+            {
+              "setting": "\"interquartile\"",
+              "tag": "1.5",
+              "output": "1 chunk",
+              "state": "good",
+              "note": "Mean + 1.5 × IQR"
+            }
+          ]
+        }
+      ],
+      "after": "`number_of_chunks` sets the threshold that gives about that many chunks. Use it only when you know how many sections a document has."
+    },
+    {
+      "type": "body",
+      "title": "No [size] cap",
+      "text": "`SemanticChunker` has `min_chunk_size` but no maximum. 24 refund sentences, one topic, `standard_deviation`:",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "compact": true,
+          "caption": "24 sentences, 1,227 characters",
+          "chunks": [
+            "Refunds are accepted within 30 days of purchase. After 30 days, refunds need manager approval. … Appeals are reviewed by a team lead within 3 business days."
+          ],
+          "verdict": "The whole document comes back as one chunk"
+        },
+        {
+          "kind": "chunks",
+          "state": "good",
+          "compact": true,
+          "label": "Then a 500-character `RecursiveCharacterTextSplitter`",
+          "chunks": [
+            {
+              "text": "Refunds are accepted within 30 days… Shipping fees are refunded when the item arrived damaged.",
+              "meta": "465"
+            },
+            {
+              "text": "Customers attach a photo when they report damage… Duplicate charges are refunded in full without approval.",
+              "meta": "479"
+            },
+            {
+              "text": "Chargebacks pause any open refund request… Appeals are reviewed by a team lead within 3 business days.",
+              "meta": "281"
+            }
+          ],
+          "verdict": "3 chunks under the cap, each ending on a full sentence"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Sentences come / from a [regex]",
+      "instagram": false,
+      "text": "The default `sentence_split_regex` is `(?<=[.?!])\\s+`: a cut after every . ? or ! followed by whitespace.",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "compact": true,
+          "tag": "Sentence",
+          "caption": "\"For refunds over $500, e.g. laptops, ask Dr. Patel. She approves them within 2 days.\"",
+          "chunks": [
+            "For refunds over $500, !!e.g.!!",
+            "laptops, ask !!Dr.!!",
+            "!!Patel.!!",
+            "She approves them within 2 days."
+          ],
+          "cut": [
+            1,
+            2
+          ],
+          "cut_label": "Split inside a sentence"
+        }
+      ],
+      "bullets": [
+        "Text with no . ? or ! comes back as one sentence, so there's nothing to compare.",
+        "Pass a `sentence_split_regex` that fits your text."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "It embeds every / [sentence] group",
+      "instagram": false,
+      "text": "Finding the cuts takes one embedding per sentence group, before a single chunk is indexed. Measured on the 24-sentence document:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Counted by wrapping the embeddings object",
+          "code": "sentences         24\nembedding inputs  24\ntext              1,227 chars\nembedded          3,551 chars  {{(2.9x)}}"
+        }
+      ],
+      "bullets": [
+        "Then the chunks get embedded again for search.",
+        "Every re-ingest pays for both passes.",
+        "With a hosted embedding model, that's about 3x the text in billed tokens before indexing starts."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Is it [worth] the cost?",
+      "text": "Qu, Tu and Bao (Vectara and UW–Madison, 2024) compared semantic and fixed-size chunking on document retrieval, evidence retrieval and answer generation.",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "neutral",
+              "title": "What they found",
+              "items": [
+                "The gains were task-dependent and inconsistent",
+                "The extra compute was \"not justified by consistent performance gains\"",
+                "Their paper: \"Is Semantic Chunking Worth the Computational Cost?\" (arXiv 2410.13070)"
+              ]
+            }
+          ]
+        }
+      ],
+      "after": "Before you switch, run both chunkers on your own questions and compare what gets retrieved."
+    },
+    {
+      "type": "body",
+      "title": "Mind the / [package]",
+      "instagram": false,
+      "text": "`SemanticChunker` lives in `langchain-experimental`. Version 0.4.2 warns on import:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "# DeprecationWarning:\n# `langchain-experimental` is being sunset\n# and is no longer actively maintained."
+        }
+      ],
+      "bullets": [
+        "Pin the version, or keep a copy of the code you use.",
+        "LlamaIndex's `SemanticSplitterNodeParser` works the same way, with the same defaults: `buffer_size=1`, 95th percentile."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Put it all / [together]",
+      "text": "Cut only on outlier jumps, then cap the size on sentence boundaries:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "semantic = SemanticChunker(\n    embeddings,\n    breakpoint_threshold_type=\"standard_deviation\",\n)\ncap = RecursiveCharacterTextSplitter(\n    chunk_size=500, chunk_overlap=0,\n    separators=[\"\\n\\n\", \"\\n\", \". \", \" \", \"\"],\n    keep_separator=\"end\",\n)\nchunks = [piece for c in semantic.split_text(text)\n          for piece in cap.split_text(c)]"
+        }
+      ],
+      "bullets": [
+        "500 is an example. Size the cap to your embedder's input limit.",
+        "Test it on a document with known topic changes before you trust the cuts."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "When it [pays] off",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Documents mix topics without headings: notes, merged pages, long emails",
+                "Ingest volume is small enough to embed the text about 3 times",
+                "It beats your current splitter on your own questions"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Skip it when",
+              "items": [
+                "Documents have headings or clear structure: split on those",
+                "A large corpus gets re-ingested often",
+                "The text has no sentence punctuation, like raw transcripts"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Embeds sentence groups, cuts at big distance jumps",
+        "Default: the top 5% of gaps (95th percentile)",
+        "One-topic docs still get cut: try `standard_deviation`",
+        "No max size: cap it with a recursive splitter",
+        "Sentences come from a regex: `e.g.` splits too",
+        "About 3x your text embedded at ingest",
+        "Compare it with fixed-size on your own questions"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Match on small chunks, then hand the LLM the whole section they came from."
+    }
+  ]
+}

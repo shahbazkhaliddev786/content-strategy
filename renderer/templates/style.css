@@ -108,7 +108,7 @@ code.ic {
 }
 
 /* ---------- cover ---------- */
-.cover .stage { justify-content: center; padding-bottom: 24px; }
+.cover .stage { justify-content: safe center; padding-bottom: 24px; }
 .pill {
   align-self: flex-start;
   background: var(--ink);
@@ -463,7 +463,7 @@ pre.code mark.cm .s, pre.code mark.cm .n { color: var(--ink); }
 .card2 code.ic, .variants .vbox code.ic { background: var(--paper); }
 
 /* next-day teaser (last slide) */
-.teaser .stage { justify-content: center; padding-bottom: 20px; }
+.teaser .stage { justify-content: safe center; padding-bottom: 20px; }
 .teaser .footer { justify-content: flex-end; }
 .next-label {
   align-self: flex-start;
@@ -501,3 +501,26 @@ pre.code mark.cm .s, pre.code mark.cm .n { color: var(--ink); }
   font-weight: 600;
 }
 .today .ico { color: var(--signal-green); }
+
+/* bars: real values (distances, scores) with threshold lines */
+.bars { background: var(--mist); border-radius: 24px; padding: 24px 30px 24px; }
+.bars .cap { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 26px; color: var(--graphite); margin-bottom: 16px; }
+.bgrid { display: grid; grid-template-columns: 84px 1fr 104px; column-gap: 16px; row-gap: calc(var(--s) * 12px); }
+.blabel { grid-column: 1; font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 26px; align-self: center; }
+.btrack { grid-column: 2; height: calc(var(--s) * 36px); background: var(--paper); border-radius: 8px; align-self: center; }
+.btrack i { display: block; height: 100%; background: var(--ink); border-radius: 8px; }
+.btrack i.bad { background: var(--signal-red); }
+.btrack i.good { background: var(--signal-green); }
+.bvalue { grid-column: 3; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 26px; align-self: center; text-align: right; }
+.bvalue.bad { color: var(--signal-red); font-weight: 700; }
+.blines { grid-column: 2; position: relative; pointer-events: none; }
+.bline { position: absolute; top: -10px; bottom: -10px; border-left: 4px dashed var(--ink); }
+.bline.bad { border-color: var(--signal-red); }
+.bline.good { border-color: var(--signal-green); }
+.blegend { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; font-size: 27px; font-weight: 600; }
+.blegend span { display: flex; align-items: center; gap: 12px; }
+.blegend i { flex: 0 0 34px; border-top: 4px dashed var(--ink); }
+.blegend .bad { color: var(--signal-red); }
+.blegend .bad i { border-color: var(--signal-red); }
+.blegend .good { color: var(--signal-green); }
+.blegend .good i { border-color: var(--signal-green); }

@@ -52,8 +52,9 @@ The script exits with code 1 when any check fails, and `report.json` lists the f
 | `steps` | `steps`: list of strings | A real sequence (an algorithm, a setup), numbered and joined by a line. 3 to 6 steps. |
 | `variants` | `caption`, `options`: `[{"setting", "tag", "output", "state", "note"}]` | The same input under different settings, each with its real output. `state` is `good`, `bad` or `neutral`. |
 | `cards` | `cards`: `[{"state", "title", "items"}]` | "Use it when" / "Move on when" lists. 2 cards, 3 or 4 items each. |
+| `bars` | `caption`, `max`, `rows`: `[{"label", "value", "text", "state"}]`, `lines`: `[{"value", "label", "state"}]` | Real measured values (distances, scores) as horizontal bars, with dashed threshold lines. `text` is how the value is printed; `state: "bad"` marks a row red. |
 
-`chunks` also takes `label` (above the panel), `cut` as a list (`[1, 2]` draws a cut after chunks 1 and 2), chunks as `{"text", "meta"}`, line breaks inside a chunk (`\n`), and `"compact": true` for slides with two panels.
+`chunks` also takes `label` (above the panel), `tag` (row label instead of "Chunk", e.g. "Sentence"), `cut` as a list (`[1, 2]` draws a cut after chunks 1 and 2), chunks as `{"text", "meta"}`, line breaks inside a chunk (`\n`), and `"compact": true` for slides with two panels.
 
 A body slide can stack two visuals, for example a `code` block followed by a `variants` view. `bullets` (2 or 3 lines) go below the visuals.
 

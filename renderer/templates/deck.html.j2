@@ -33,7 +33,7 @@
   {%- if v.caption %}<div class="cap">{{ v.caption | inline }}</div>{% endif %}
   {%- for c in v.chunks %}
   {%- set text = c.text if c is mapping else c %}
-  <div class="chunk"><div class="tag">Chunk {{ loop.index }}{% if c is mapping and c.meta %}<span class="meta">{{ c.meta }}</span>{% endif %}</div><div class="box">{{ text | chunktext }}</div></div>
+  <div class="chunk"><div class="tag">{{ v.tag | default('Chunk') }} {{ loop.index }}{% if c is mapping and c.meta %}<span class="meta">{{ c.meta }}</span>{% endif %}</div><div class="box">{{ text | chunktext }}</div></div>
   {%- if loop.index in cuts %}
   <div class="cut"><span class="line"></span><span>{{ v.cut_label | default('Cut mid-sentence') }}</span><span class="line"></span></div>
   {%- endif %}
@@ -69,6 +69,19 @@
     <div class="vbox">{{ o.output | chunktext }}</div>
   </div>
   {%- endfor %}
+</div>
+{%- elif v.kind == 'bars' -%}
+<div class="block bars">
+  {%- if v.caption %}<div class="cap">{{ v.caption | inline }}</div>{% endif %}
+  <div class="bgrid">
+    {%- for r in v.rows %}
+    <span class="blabel" style="grid-row: {{ loop.index }}">{{ r.label }}</span>
+    <span class="btrack" style="grid-row: {{ loop.index }}"><i class="{{ r.state | default('') }}" style="width: {{ (100 * r.value / v.max) | round(2) }}%"></i></span>
+    <span class="bvalue {{ r.state | default('') }}" style="grid-row: {{ loop.index }}">{{ r.text | default(r.value) }}</span>
+    {%- endfor %}
+    <span class="blines" style="grid-row: 1 / span {{ v.rows | length }}">{% for l in v.lines %}<span class="bline {{ l.state | default('') }}" style="left: {{ (100 * l.value / v.max) | round(2) }}%"></span>{% endfor %}</span>
+  </div>
+  {%- if v.lines %}<div class="blegend">{% for l in v.lines %}<span class="{{ l.state | default('') }}"><i></i>{{ l.label | inline }}</span>{% endfor %}</div>{% endif %}
 </div>
 {%- elif v.kind == 'cards' -%}
 <div class="block cards">
