@@ -21,3 +21,4 @@ Rows for RAG #01–#11 were backfilled from the published posts on Oct 31 2026 (
 | RAG #13 | Deleted docs still answer | Change detection in RAG ingestion has a blind spot: deleted files. | A (story) |
 | RAG #14 | Where did the refund rule go? | Fixed-size chunking with overlap comes with one guarantee: any fact shorter than the overlap lands whole in at least one chunk. | B (claim) |
 | RAG #15 | Periods aren't a default separator | Recursive splitting can still cut a sentence in half. | C (checklist preview) |
+| RAG #16 | Cut where the meaning jumps between sentences. | Semantic chunking cuts where the meaning jumps between sentences. | B (claim) |
