@@ -1,4 +1,4 @@
-Status: draft (format v3, daily run 12 Nov 2026; second review returned revise, reviewer fixes applied, not reviewed again, not posted)
+Status: approved by Shahbaz 12 Nov 2026 (in chat: "Post it today", after the second review returned revise and its fixes were applied)
 
 ## LinkedIn (1274 chars)
 
