@@ -1,0 +1,14 @@
+# RAG #17 (format v3): sources (not posted)
+
+Every example output on the slides is real. `RAG17_verify.py` re-runs each one and checks the slide text against it (23 checks).
+
+- **Library:** `langchain-classic` 1.0.8 (with `langchain-core` 1.8.0, `langchain-text-splitters` 1.1.3), `ParentDocumentRetriever` and its base `MultiVectorRetriever`, read from the installed source. In LangChain 1.x the retriever lives in `langchain_classic.retrievers`.
+  - `parent_splitter` defaults to `None`; then "the parent documents will be the raw documents passed in".
+  - Children get the parent id in metadata under `id_key="doc_id"`; parents are stored with `docstore.mset`.
+  - Retrieval: `vectorstore.similarity_search(query, **search_kwargs)`; `search_kwargs` defaults to `{}`, so the vector store's `k=4` applies (`VectorStore.similarity_search(query, k=4)`); parent ids are collected without duplicates in rank order; `docstore.mget(ids)`; `None` results are filtered out (so a missing parent gives an empty list).
+  - `add_documents` gives each parent `uuid.uuid4()` when no `ids` are passed; with `ids`, `len(ids)` must equal the number of parents after `parent_splitter` (else `ValueError: Got uneven list of documents and ids`). No delete method on the retriever.
+  - Docstring example sizes: parent `chunk_size=2000`, child `chunk_size=400`, `InMemoryStore`. Docstring quote: "If too long, then the embeddings can lose meaning."
+  - `search_type="similarity_score_threshold"` calls `similarity_search_with_relevance_scores`; `InMemoryVectorStore` raises `NotImplementedError` there (no relevance score function).
+- **LlamaIndex:** `llama-index-core` 0.14.25. `AutoMergingRetriever(simple_ratio_thresh=0.5)` merges children into the parent when `ratio > simple_ratio_thresh` (retrieved children / parent's children). `HierarchicalNodeParser.from_defaults()` uses `chunk_sizes=[2048, 512, 128]`.
+- **Embeddings in the examples:** spaCy 3.8 `en_core_web_md` 3.8.0 (average word vectors), from the spaCy models release on GitHub. The slide names the model.
+- **Measurements (4-section handbook, 1,360 characters):** child splitter 100 characters (sentence separator, `keep_separator="end"`) → 23 children. Parent splitter 500 characters, `"\n## "` first → 4 parents of 401, 354, 347, 251 characters. Query "How long do warranty repairs take?": top 4 children scored 0.918, 0.905, 0.902, 0.888 (none contains "Repairs take"); first parent returned is Warranty (347 chars) with "Repairs take about 10 business days." k=1/4/10 → 1/3/4 parents, 347/1,102/1,353 characters. Refund query at k=4 → 2 parents. `parent_splitter=None` → 1 parent of 1,360 characters for both queries. Adding the handbook twice → 46 children, 8 parents, Warranty returned twice. Empty docstore with the same vector store → `[]`. Config with `LocalFileStore` → parents found by a new retriever on the same folder.

@@ -1,0 +1,268 @@
+{
+  "post": "RAG #17",
+  "module": "RAG chunking",
+  "topic": "Parent-document retriever",
+  "series": {
+    "name": "Small-to-big",
+    "part": 1,
+    "of": 2
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "[Parent] / document / retriever",
+      "hook": "The top 4 chunks all missed the answer. Return the section around the top hit, and size that section yourself.",
+      "inside": [
+        "How children map to parents",
+        "A real run where the parent held the answer",
+        "Four gotchas, with fixes",
+        "When to use it"
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Match [small], / return the section",
+      "text": "Small chunks give sharp embeddings but little context. LangChain's `ParentDocumentRetriever` (in `langchain-classic`) keeps both:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "`parent_splitter` cuts each document into parents, such as sections.",
+            "`child_splitter` cuts each parent into small children.",
+            "Each child is embedded with its parent's id in `doc_id`.",
+            "Parents go into a docstore under that id.",
+            "A query finds the top `k` children, keeps their unique parent ids in rank order and returns those parents."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The parent held / the [answer]",
+      "text": "A 4-section support handbook, 23 children of up to 100 characters. Query: \"How long do warranty repairs take?\"",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "compact": true,
+          "label": "Top 4 children (spaCy en_core_web_md vectors)",
+          "chunks": [
+            {
+              "text": "The warranty covers manufacturing faults. It does not cover water damage or drops.",
+              "meta": "0.918"
+            },
+            {
+              "text": "Warranty claims need the serial number. Approved claims get a repair or a replacement.",
+              "meta": "0.905"
+            },
+            {
+              "text": "Damaged parcels are replaced at no cost when the customer sends a photo within 7 days.",
+              "meta": "0.902"
+            },
+            {
+              "text": "Refunds go back to the original payment method.",
+              "meta": "0.888"
+            }
+          ],
+          "verdict": "The answer sentence ranked outside the top 4"
+        },
+        {
+          "kind": "chunks",
+          "state": "good",
+          "compact": true,
+          "label": "Parent returned first: Warranty, 347 characters",
+          "chunks": [
+            "## Warranty … Approved claims get a repair or a replacement. !!Repairs take about 10 business days.!! …"
+          ],
+          "verdict": "The answer comes back with the parent"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "No parent splitter: / the whole [document]",
+      "text": "`parent_splitter` defaults to `None`. Then the parent is the raw document you passed in. Same handbook, same 23 children:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "parent_splitter=None",
+              "tag": "default",
+              "output": "!!1 parent, 1,360 characters!!: the whole handbook for every query",
+              "state": "bad",
+              "note": "One parent per input document"
+            },
+            {
+              "setting": "500 characters, split on \"\\n## \" first",
+              "tag": "",
+              "output": "4 parents: 401, 354, 347 and 251 characters, one per section",
+              "state": "good",
+              "note": "One parent per section"
+            }
+          ]
+        }
+      ],
+      "after": "Load a 200-page PDF as one document and every hit returns all 200 pages. Split parents on headings first."
+    },
+    {
+      "type": "body",
+      "title": "`k` counts / [children]",
+      "text": "`search_kwargs` is empty by default, so the vector store's `k=4` applies to children. Parents are then deduped. The warranty query:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "k=1",
+              "tag": "",
+              "output": "1 parent, 347 characters",
+              "state": "neutral",
+              "note": "Warranty only"
+            },
+            {
+              "setting": "k=4",
+              "tag": "default",
+              "output": "3 parents, 1,102 characters",
+              "state": "neutral",
+              "note": "Warranty, Shipping, Refunds"
+            },
+            {
+              "setting": "k=10",
+              "tag": "",
+              "output": "!!4 parents, 1,353 characters!!",
+              "state": "bad",
+              "note": "Every section of the handbook"
+            }
+          ]
+        }
+      ],
+      "after": "The query \"Who has to approve refunds over $500?\" returns 2 parents at k=4. Budget for k × your largest parent, then set `k` in `search_kwargs`."
+    },
+    {
+      "type": "body",
+      "title": "Re-ingest [doubles] / every parent",
+      "text": "`add_documents` gives each parent a new random id (`uuid4`). The same handbook, added twice:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "children          23 → 46\nparents            4 → 8\ntop 4 children    {{2 Warranty, each twice}}\nreturned          Warranty ×2 (two ids)"
+        }
+      ],
+      "bullets": [
+        "The retriever has no delete method. Remove old children from the vector store and old parents from the docstore yourself.",
+        "Passing `ids` with a `parent_splitter` fails unless there's one id per parent after splitting."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "In-memory parents / [vanish]",
+      "text": "With `InMemoryStore`, the docstore in the docs' example, parents live in the Python process. A new process, same vector store:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "children in vector store   23\nparents in docstore         0\nretriever.invoke(query)    {{[]}}"
+        }
+      ],
+      "bullets": [
+        "No error: missing parents are filtered out and you get an empty list.",
+        "Pass a persistent `byte_store`, such as `LocalFileStore`, or a database-backed store."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "[Scores] stay / behind",
+      "instagram": false,
+      "text": "Parents come back with the parent's own metadata: no similarity score and no record of which child matched.",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "parents[0].metadata\n# {'source': 'handbook.md'}"
+        }
+      ],
+      "bullets": [
+        "To cite the matching line, run `similarity_search_with_score` on the children yourself.",
+        "The retriever's `similarity_score_threshold` mode drops weak hits, but needs relevance scores; `InMemoryVectorStore` raises `NotImplementedError`."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "LlamaIndex merges / by [ratio]",
+      "instagram": false,
+      "text": "LlamaIndex's `AutoMergingRetriever` swaps in a parent only when more than half of its children are retrieved.",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Defaults in llama-index-core 0.14.25",
+          "code": "AutoMergingRetriever(\n    vector_retriever, storage_context,\n    simple_ratio_thresh={{0.5}})\nHierarchicalNodeParser.from_defaults()\n# chunk_sizes=[2048, 512, 128]"
+        }
+      ],
+      "bullets": [
+        "One matching child out of four comes back on its own.",
+        "LangChain's retriever returns the parent on a single hit."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Put it all / [together]",
+      "instagram": false,
+      "text": "Section-sized parents, small children, a set `k` and a docstore that survives a restart:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "parent = RecursiveCharacterTextSplitter(\n    chunk_size=2000,\n    separators=[\"\\n## \", \"\\n\\n\", \"\\n\",\n                \". \", \" \"])\nchild = RecursiveCharacterTextSplitter(\n    chunk_size=400)\nretriever = ParentDocumentRetriever(\n    vectorstore=vectorstore,\n    byte_store=LocalFileStore(\"./parents\"),\n    child_splitter=child,\n    parent_splitter=parent,\n    search_kwargs={\"k\": 4})"
+        }
+      ],
+      "bullets": [
+        "LangChain's own example uses 2000 and 400 characters. Check k × 2000 characters against your token budget.",
+        "On re-ingest, delete the old children and parents first."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "When it [pays] off",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Answers need the whole section: steps, conditions, exceptions",
+                "Documents have headings to cut parents on",
+                "k × your largest parent fits the context budget"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Sections are long and the answer sits in a sentence or two: try sentence-window retrieval",
+                "Sections run to thousands of tokens",
+                "You need scores or the matched line for citations"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Embed small children, return their parent section",
+        "`parent_splitter=None` returns the whole document",
+        "Default `k=4` counts children; parents deduped",
+        "Budget k × your largest parent",
+        "Re-adding duplicates: delete old copies first",
+        "Persist the docstore, or a restart returns []",
+        "Parents come back without scores"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Go smaller still: embed single sentences, then hand the model the sentences around each hit."
+    }
+  ]
+}
