@@ -1,0 +1,242 @@
+{
+  "post": "RAG #18",
+  "module": "RAG chunking",
+  "topic": "Sentence-window retrieval",
+  "series": {
+    "name": "Small-to-big",
+    "part": 2,
+    "of": 2
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "[Sentence] / window / retrieval",
+      "hook": "Sentence windows ignore headings and overlap: at top_k=4, they sent more text than the whole handbook.",
+      "inside": [
+        "How the window is built",
+        "A run where the next sentence held the answer",
+        "Three gotchas, with fixes",
+        "When to pick it over parent-document"
+      ]
+    },
+    {
+      "type": "body",
+      "title": "One sentence in, / a [window] out",
+      "text": "LlamaIndex (`llama-index-core` 0.14.25) builds it from two pieces:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "`SentenceWindowNodeParser` splits each document into sentences with NLTK's Punkt tokenizer: one node per sentence.",
+            "Each node keeps its neighbors in `metadata[\"window\"]`: `window_size=3` sentences on each side by default.",
+            "Only the sentence is embedded; `window` and `original_text` are excluded.",
+            "At query time, `MetadataReplacementPostProcessor` swaps each hit's text for its window."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The next sentence / held the [answer]",
+      "text": "A 1,360-character support handbook, split into 27 sentence nodes. Query: \"Who has to approve refunds over $500?\"",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "compact": true,
+          "label": "Top hit (spaCy en_core_web_md vectors)",
+          "tag": "Hit",
+          "chunks": [
+            {
+              "text": "Refunds over $500 follow a separate rule.",
+              "meta": "0.903"
+            }
+          ],
+          "verdict": "The sentence alone doesn't say who approves"
+        },
+        {
+          "kind": "chunks",
+          "state": "good",
+          "compact": true,
+          "label": "Its window, window_size=3: 363 characters",
+          "chunks": [
+            "… Refunds go back to the original payment method. Refunds over $500 follow a separate rule. !!They need a second approval from the finance team.!! Finance replies within 2 business days. …"
+          ],
+          "verdict": "The answer comes back with the window",
+          "tag": "Hit"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The window needs / a [postprocessor]",
+      "text": "The parser only stores the window. Same query, retriever without `MetadataReplacementPostProcessor`:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "hit = retriever.retrieve(q)[0]\nhit.node.text\n# {{'Refunds over $500 follow a separate rule. '}}\nlen(hit.node.metadata[\"window\"])\n# 363"
+        }
+      ],
+      "bullets": [
+        "The window is also excluded from the LLM's view of metadata, so the model gets the bare sentence.",
+        "Pass the postprocessor in `node_postprocessors` on the query engine, with `target_metadata_key=\"window\"`."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Windows [cross] / headings",
+      "text": "A window stops only at the edge of the document or node it was built from. Query: \"Do international orders pay customs fees?\"",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "compact": true,
+          "label": "Whole handbook as one Document",
+          "chunks": [
+            "… International orders pay customs fees on delivery. Tracking links are emailed when the order ships. Damaged parcels are replaced at no cost … !!## Warranty Every device has a 1-year warranty from the delivery date.!!"
+          ],
+          "verdict": "A Shipping hit carries a Warranty sentence",
+          "tag": "Hit"
+        },
+        {
+          "kind": "chunks",
+          "state": "good",
+          "compact": true,
+          "label": "MarkdownNodeParser first, then the window parser",
+          "chunks": [
+            "… International orders pay customs fees on delivery. Tracking links are emailed when the order ships. !!Damaged parcels are replaced at no cost when the customer sends a photo within 7 days.!!"
+          ],
+          "verdict": "The window ends with the Shipping section",
+          "tag": "Hit"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Nearby hits / [repeat] lines",
+      "text": "Windows aren't merged. Query: \"How long do warranty repairs take?\", `similarity_top_k=4`:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "hits (sentence #)    15, 18, 20, 3\nwindows sent         {{1,438 characters}}\nwhole handbook       1,360 characters"
+        }
+      ],
+      "bullets": [
+        "The windows around sentences 15, 18 and 20 overlap, so sentence 18 reaches the model 3 times.",
+        "Drop a hit whose sentence already sits in a higher-ranked window. Here: 3 windows, 1,066 characters, answer kept."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Size the window / in [sentences]",
+      "text": "`window_size` counts sentences on each side, so the characters follow sentence length. The refund query's top hit:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "window_size=1",
+              "tag": "",
+              "output": "!!143 characters!!, answer included",
+              "state": "good",
+              "note": "The sentence before and after"
+            },
+            {
+              "setting": "window_size=2",
+              "tag": "",
+              "output": "233 characters, answer included",
+              "state": "neutral",
+              "note": "Up to 5 sentences"
+            },
+            {
+              "setting": "window_size=3",
+              "tag": "default",
+              "output": "363 characters, answer included",
+              "state": "neutral",
+              "note": "Up to 7 sentences"
+            }
+          ]
+        }
+      ],
+      "after": "Here 1 was enough. Test sizes on your own questions: when the answer is the next sentence, a bigger window adds tokens and no facts."
+    },
+    {
+      "type": "body",
+      "title": "Every node stores / its [window]",
+      "instagram": false,
+      "text": "Each sentence node carries its whole window in `metadata`, and the docstore saves every node with it. The 1,360-character handbook:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "sentence nodes (vectors)   27\nwindow text, size=3        {{8,973 characters}}\nwindow text, size=1        3,992 characters"
+        }
+      ],
+      "bullets": [
+        "At size 3, the stored windows are 6.6 times the text itself.",
+        "The vector count stays at 27; the extra characters land in the docstore."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Put it all / [together]",
+      "instagram": false,
+      "text": "Section-bound windows, size 2, postprocessor on:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "pipeline = IngestionPipeline(\n    transformations=[\n        MarkdownNodeParser(),\n        SentenceWindowNodeParser\n            .from_defaults(window_size=2)])\nindex = VectorStoreIndex(\n    pipeline.run(documents=docs))\nengine = index.as_query_engine(\n    similarity_top_k=4,\n    node_postprocessors=[\n        MetadataReplacementPostProcessor(\n            target_metadata_key=\"window\")])"
+        }
+      ],
+      "bullets": [
+        "`similarity_top_k` defaults to 2 in LlamaIndex.",
+        "Drop overlapping hits before the prompt is built."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Sentence window / or [parent]?",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "One or two sentences hold the answer: policies, specs, FAQs",
+                "Facts lean on the sentence before or after",
+                "The text is prose that splits cleanly into sentences"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Answers need a whole section's steps or structure: use the parent-document retriever",
+                "The text is tables, code or lists, where a sentence is a poor unit",
+                "Storage per node matters: each one keeps its window"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Embed one sentence, return its neighbors",
+        "Default `window_size=3`: up to 7 sentences",
+        "Add `MetadataReplacementPostProcessor`, or the model sees one sentence",
+        "Split on headings first, or windows cross sections",
+        "Drop hits already inside a higher-ranked window",
+        "Each node stores its window: plan the storage",
+        "Whole-section answers: use parent-document"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Sentence splitting assumes prose. For source code, the unit to keep whole is the function, signature and body together."
+    }
+  ]
+}
