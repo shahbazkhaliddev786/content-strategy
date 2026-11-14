@@ -1,13 +1,13 @@
-Status: draft (not posted 13 Nov 2026: second rubric review returned revise; its fixes are applied here and need Shahbaz's approval)
+Status: draft (not posted 14 Nov 2026: second rubric review returned revise; fixes 1 and 3 applied here, fix 2 (code for dropping covered hits in the config slide) still open; needs Shahbaz's approval)
 
-## LinkedIn (1190 chars)
+## LinkedIn (1214 chars)
 
 Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence.
 Here: "Refunds over $500 follow a separate rule.", with the approver cut off.
 
 In LlamaIndex, SentenceWindowNodeParser embeds each sentence alone and stores 3 sentences on each side (window_size=3) in the node's metadata, outside the embedding. The window stays in metadata until MetadataReplacementPostProcessor swaps it into the node text. Without that step, the model gets the bare sentence.
 
-The run used Part 1's support handbook. The answer, "They need a second approval from the finance team.", sits right after the top hit, inside its window.
+The run used a 1,360-character support handbook (27 sentences). The answer, "They need a second approval from the finance team.", sits right after the top hit, inside its window.
 
 Two more things to watch:
 • A window stops only at the edge of its document, so a Shipping hit pulled in the Warranty heading.
@@ -28,7 +28,7 @@ Here: "Refunds over $500 follow a separate rule.", with the approver cut off.
 
 In LlamaIndex, SentenceWindowNodeParser embeds each sentence alone and stores 3 sentences on each side (window_size=3) in the node's metadata, outside the embedding. The window stays in metadata until MetadataReplacementPostProcessor swaps it into the node text. Without that step, the model gets the bare sentence.
 
-The run used Part 1's support handbook. The answer, "They need a second approval from the finance team.", sits right after the top hit, inside its window.
+The run used a 1,360-character support handbook (27 sentences). The answer, "They need a second approval from the finance team.", sits right after the top hit, inside its window.
 
 Two more things to watch:
 • A window stops only at the edge of its document, so a Shipping hit pulled in the Warranty heading.
@@ -84,7 +84,7 @@ Sentence-window retrieval | RAG series
 
 ## hooks_log row
 
-| RAG #18 | Sentence windows ignore headings and overlap: at top_k=4, they sent more text than the whole handbook. | Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence. | B (claim) |
+| RAG #18 | At top_k=4, four sentence windows sent more text than the whole handbook. | Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence. | B (claim) |
 
 ## Caption shape
 

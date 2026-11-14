@@ -11,7 +11,7 @@
     {
       "type": "cover",
       "title": "[Sentence] / window / retrieval",
-      "hook": "Sentence windows ignore headings and overlap: at top_k=4, they sent more text than the whole handbook.",
+      "hook": "At top_k=4, four sentence windows sent more text than the whole handbook.",
       "inside": [
         "How the window is built",
         "A run where the next sentence held the answer",
@@ -21,7 +21,7 @@
     },
     {
       "type": "body",
-      "title": "One sentence in, / a [window] out",
+      "title": "Where the / [window] lives",
       "text": "LlamaIndex (`llama-index-core` 0.14.25) builds it from two pieces:",
       "visuals": [
         {
@@ -93,7 +93,7 @@
           "compact": true,
           "label": "Whole handbook as one Document",
           "chunks": [
-            "… International orders pay customs fees on delivery. Tracking links are emailed when the order ships. Damaged parcels are replaced at no cost … !!## Warranty Every device has a 1-year warranty from the delivery date.!!"
+            "… International orders pay customs fees on delivery. … !!## Warranty Every device has a 1-year warranty from the delivery date.!!"
           ],
           "verdict": "A Shipping hit carries a Warranty sentence",
           "tag": "Hit"
@@ -104,7 +104,7 @@
           "compact": true,
           "label": "MarkdownNodeParser first, then the window parser",
           "chunks": [
-            "… International orders pay customs fees on delivery. Tracking links are emailed when the order ships. !!Damaged parcels are replaced at no cost when the customer sends a photo within 7 days.!!"
+            "… International orders pay customs fees on delivery. … !!Damaged parcels are replaced at no cost when the customer sends a photo within 7 days.!!"
           ],
           "verdict": "The window ends with the Shipping section",
           "tag": "Hit"
@@ -164,7 +164,7 @@
       "type": "body",
       "title": "Every node stores / its [window]",
       "instagram": false,
-      "text": "Each sentence node carries its whole window in `metadata`, and the docstore saves every node with it. The 1,360-character handbook:",
+      "text": "Each sentence node stores its whole window in `metadata`. The 1,360-character handbook:",
       "visuals": [
         {
           "kind": "code",
@@ -173,7 +173,7 @@
       ],
       "bullets": [
         "At size 3, the stored windows are 6.6 times the text itself.",
-        "The vector count stays at 27; the extra characters land in the docstore."
+        "The vector count stays at 27; the extra characters land in node storage."
       ]
     },
     {

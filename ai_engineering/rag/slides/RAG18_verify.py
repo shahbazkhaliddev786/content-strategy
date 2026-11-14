@@ -62,7 +62,7 @@ CUSTOMS = "Do international orders pay customs fees?"
 WARRANTY = "How long do warranty repairs take?"
 
 # ---- versions and defaults (slide 2, cheat sheet, config)
-check("llama-index-core 0.14.25", md.version("llama-index-core") == "0.14.25" and "0.14.25" in slide("One sentence in, / a [window] out")["text"])
+check("llama-index-core 0.14.25", md.version("llama-index-core") == "0.14.25" and "0.14.25" in slide("Where the / [window] lives")["text"])
 f = SentenceWindowNodeParser.model_fields
 check("window_size default 3, key 'window', 'original_text'", f["window_size"].default == 3 and f["window_metadata_key"].default == "window" and f["original_text_metadata_key"].default == "original_text")
 check("sentence splitter is NLTK Punkt", "PunktSentenceTokenizer" in inspect.getsource(li_utils))
@@ -107,7 +107,8 @@ nodes_md, index_md = build(markdown_first=True)
 good = index_md.as_retriever().retrieve(CUSTOMS)[0].node.metadata["window"]
 check("MarkdownNodeParser first: no Warranty in window", "Warranty" not in good)
 check("good window ends with Damaged parcels sentence", squash(good).endswith("Damaged parcels are replaced at no cost when the customer sends a photo within 7 days."))
-check("good window slide text real", plain(s5["visuals"][1]["chunks"][0]).lstrip("… ") in squash(good))
+for part in plain(s5["visuals"][1]["chunks"][0]).split(" … "):
+    check(f"good window shows real text: {part[:30]}", part.strip("… ").strip() in squash(good))
 
 # ---- slide 6: overlapping windows
 s6 = slide("Nearby hits / [repeat] lines")
