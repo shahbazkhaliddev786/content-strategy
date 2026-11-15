@@ -16,3 +16,8 @@ Every example output on the slides is real. `RAG18_verify.py` re-runs each one a
   - "Do international orders pay customs fees?": top hit is the customs sentence; with the whole handbook as one Document its window ends with "## Warranty Every device has a 1-year warranty from the delivery date."; with `MarkdownNodeParser` first it ends with the "Damaged parcels…" sentence.
   - "How long do warranty repairs take?", `similarity_top_k=4`: hits are sentences 15, 18, 20 and 3; their windows total 1,438 characters (handbook: 1,360); sentence 18 appears in 3 of them. Dropping hits whose sentence is already inside a higher-ranked window leaves 3 windows, 1,066 characters, still containing "Repairs take about 10 business days."
 - **Part 1 comparison:** RAG #17's setup indexed 23 children of up to 100 characters (see `RAG17_sources.md`).
+
+## 15 Nov 2026 addition: DropCovered postprocessor
+- `DropCovered` subclasses `llama_index.core.postprocessor.types.BaseNodePostprocessor` and implements `_postprocess_nodes(nodes, query_bundle=None)` (signature read with `inspect` from llama-index-core 0.14.25). RAG18_verify.py executes the class exactly as printed on the slide.
+- On the warranty query at `similarity_top_k=4` it keeps 3 of 4 hits, the same 3 windows (1,066 characters) as slide 6.
+- `RetrieverQueryEngine._apply_node_postprocessors` loops over `self._node_postprocessors` in list order (source read with `inspect`).

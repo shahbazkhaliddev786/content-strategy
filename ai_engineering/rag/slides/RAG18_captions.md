@@ -1,11 +1,11 @@
-Status: draft (not posted 14 Nov 2026: second rubric review returned revise; fixes 1 and 3 applied here, fix 2 (code for dropping covered hits in the config slide) still open; needs Shahbaz's approval)
+Status: posted 15 Nov 2026 (rubric review passed first time on 15 Nov after the DropCovered slide was added; reviewer minor fixes 1 and 2 applied)
 
-## LinkedIn (1214 chars)
+## LinkedIn (1158 chars)
 
 Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence.
 Here: "Refunds over $500 follow a separate rule.", with the approver cut off.
 
-In LlamaIndex, SentenceWindowNodeParser embeds each sentence alone and stores 3 sentences on each side (window_size=3) in the node's metadata, outside the embedding. The window stays in metadata until MetadataReplacementPostProcessor swaps it into the node text. Without that step, the model gets the bare sentence.
+In LlamaIndex, SentenceWindowNodeParser embeds each sentence alone and stores 3 sentences on each side (window_size=3) in the node's metadata, outside the embedding. The window stays in metadata until MetadataReplacementPostProcessor swaps it into the node text at query time.
 
 The run used a 1,360-character support handbook (27 sentences). The answer, "They need a second approval from the finance team.", sits right after the top hit, inside its window.
 
@@ -13,7 +13,7 @@ Two more things to watch:
 • A window stops only at the edge of its document, so a Shipping hit pulled in the Warranty heading.
 • Nearby hits overlap. At similarity_top_k=4, four windows came to 1,438 characters, more than the 1,360-character handbook.
 
-The slides have the real outputs, a fix for each and a config for the postprocessor and heading fixes.
+The slides have the real outputs, a fix for each and one config with all three fixes.
 
 How much context do you hand the model around a hit: a few sentences, a token budget or the whole section?
 
@@ -26,7 +26,7 @@ Tomorrow: chunking code
 Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence.
 Here: "Refunds over $500 follow a separate rule.", with the approver cut off.
 
-In LlamaIndex, SentenceWindowNodeParser embeds each sentence alone and stores 3 sentences on each side (window_size=3) in the node's metadata, outside the embedding. The window stays in metadata until MetadataReplacementPostProcessor swaps it into the node text. Without that step, the model gets the bare sentence.
+In LlamaIndex, SentenceWindowNodeParser embeds each sentence alone and stores 3 sentences on each side (window_size=3) in the node's metadata, outside the embedding. The window stays in metadata until MetadataReplacementPostProcessor swaps it into the node text at query time.
 
 The run used a 1,360-character support handbook (27 sentences). The answer, "They need a second approval from the finance team.", sits right after the top hit, inside its window.
 
@@ -84,7 +84,7 @@ Sentence-window retrieval | RAG series
 
 ## hooks_log row
 
-| RAG #18 | At top_k=4, four sentence windows sent more text than the whole handbook. | Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence. | B (claim) |
+| RAG #18 | One sentence reached the model three times, inside overlapping windows. | Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence. | B (claim) |
 
 ## Caption shape
 

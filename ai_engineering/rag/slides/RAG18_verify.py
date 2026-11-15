@@ -143,9 +143,27 @@ check("8,973 and 3,992 stored window characters", w3 == 8973 and w1 == 3992 and 
 check("6.6 times the text", f"{w3 / len(HANDBOOK):.1f}" == "6.6" and "6.6" in s8["bullets"][0])
 check("docstore keeps the window", all("window" in d.metadata for d in index.docstore.docs.values()))
 
-# ---- slide 9: the config runs and returns windows
+# ---- DropCovered slide: run the class exactly as printed on the slide
+from llama_index.core.postprocessor.types import BaseNodePostprocessor
+from llama_index.core.query_engine import RetrieverQueryEngine
+sdc = slide("Drop [covered] / hits")
+ns = {"BaseNodePostprocessor": BaseNodePostprocessor}
+exec(re.sub(r"\{\{(.+?)\}\}", r"\1", sdc["visuals"][0]["code"]), ns)
+DropCovered = ns["DropCovered"]
+dc_out = DropCovered().postprocess_nodes(index.as_retriever(similarity_top_k=4).retrieve(WARRANTY))
+check("DropCovered: 4 hits in, 3 out, same as slide 6", len(dc_out) == 3 and [n.node.node_id for n in dc_out] == [h.node.node_id for h in kept])
+check("DropCovered keeps the answer", any("Repairs take about 10 business days." in n.node.metadata["window"] for n in dc_out))
+check("hits arrive best first", all(a.score >= b.score for a, b in zip(hits4, hits4[1:])))
+check("postprocessors run in list order", "for node_postprocessor in self._node_postprocessors" in inspect.getsource(RetrieverQueryEngine._apply_node_postprocessors))
+
+# ---- config slide: the config runs and returns windows
+cfg = slide("Put it all / [together]")["visuals"][0]["code"]
+check("config lists DropCovered before the replacement postprocessor", cfg.index("DropCovered()") < cfg.index("MetadataReplacementPostProcessor("))
 _, index_cfg = build(window_size=2, markdown_first=True)
-eng = index_cfg.as_query_engine(similarity_top_k=4, node_postprocessors=[MetadataReplacementPostProcessor(target_metadata_key="window")])
+eng = index_cfg.as_query_engine(similarity_top_k=4, node_postprocessors=[DropCovered(), MetadataReplacementPostProcessor(target_metadata_key="window")])
 check("config: query engine returns windows", "finance team" in eng.query(REFUND).source_nodes[0].node.text)
+wr = eng.query(WARRANTY).source_nodes
+texts = [n.node.text for n in wr]
+check("config: no source window repeats a kept sentence", len(wr) >= 1 and all(n.node.metadata["original_text"] not in "".join(texts[:i]) for i, n in enumerate(wr)))
 
 print("ALL PASS" if all(ok) else f"{ok.count(False)} FAILED")

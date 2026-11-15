@@ -23,3 +23,4 @@ Rows for RAG #01–#11 were backfilled from the published posts on Oct 31 2026 (
 | RAG #15 | Periods aren't a default separator | Recursive splitting can still cut a sentence in half. | C (checklist preview) |
 | RAG #16 | Cut where the meaning jumps between sentences. | Semantic chunking cuts where the meaning jumps between sentences. | B (claim) |
 | RAG #17 | The top 4 chunks all missed the answer. Return the section around the top hit, and size that section yourself. | The top 4 chunks for a warranty question all missed the sentence that answers it. | A (story) |
+| RAG #18 | One sentence reached the model three times, inside overlapping windows. | Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence. | B (claim) |
