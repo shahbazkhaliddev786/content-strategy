@@ -1,0 +1,246 @@
+{
+  "post": "RAG #19",
+  "module": "RAG chunking",
+  "topic": "Chunking code",
+  "series": {
+    "name": "Chunking by doc type",
+    "part": 1,
+    "of": 4
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Chunking / [code]",
+      "hook": "Chunk code per function, with its file, class and constants on top. At 250 characters, three splitters sent a search for the refund limit to the imports block.",
+      "inside": [
+        "Where three splitters cut one refund method",
+        "Two gotchas in LangChain's Python separators",
+        "A chunk header with file, class and constants",
+        "The search test, and when to move on"
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Code comes in / [units]",
+      "text": "A reader looks up a function, a method or a class. Each chunk holds one whole unit and its location:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Parse the file into a syntax tree: Python's `ast`, or tree-sitter for most other languages.",
+            "Make one chunk per function or method, decorators included.",
+            "Put the file path, the class and the module constants it reads on top.",
+            "Split an oversized function between statements; each part repeats the signature."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Characters cut / the [method]",
+      "text": "LangChain's `RecursiveCharacterTextSplitter` with `chunk_size=250` and no overlap, on a 34-line `billing/refunds.py`:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 2 of 4",
+          "code": "def refund(self, order, amount):\n        if amount <= 0:\n            raise ValueError(\"amount <= 0\")\n        if amount > order.paid:\n            raise ValueError(\"over paid\")"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 3 of 4",
+          "code": "{{if amount > LIMIT:}}\n            raise ValueError(\"needs approval\")\n        rid = self.gw.refund(order, amount)\n        order.refunded += amount\n        log.info(\"refund %s\", rid)\n        return rid"
+        }
+      ],
+      "after": "The cut fell on the blank line inside `refund`. Chunk 3 holds the limit check with no function, class or file name."
+    },
+    {
+      "type": "body",
+      "title": "The method split / needs a [tab]",
+      "text": "LangChain's `from_language(Language.PYTHON)` tries these separators in order (langchain-text-splitters 1.1.3):",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "\"\\nclass \", \"\\ndef \", {{\"\\n\\tdef \"}},\n\"\\n\\n\", \"\\n\", \" \", \"\""
+        }
+      ],
+      "bullets": [
+        "`\\n\\tdef ` matches a method indented with a tab. PEP 8 says \"Use 4 spaces per indentation level\", so methods fall through to `\\n\\n`: any blank line.",
+        "Same file at 250 characters: chunk 4 of 6 starts at `if amount > LIMIT:`, the same cut as the character splitter."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Decorators get / [left] behind",
+      "text": "When a chunk boundary falls on a `\\ndef `, the `def` starts the new chunk and the decorator above it stays in the old one:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 5 of 6",
+          "code": "def left(self, order):\n        return order.paid - order.refunded\n\n\n{{@retry(times=3)}}"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 6 of 6",
+          "code": "def sync_refunds(service, orders):\n    for order in orders:\n        service.gw.sync(order)"
+        }
+      ],
+      "after": "Chunk 6 no longer says that `sync_refunds` retries. A route decorator such as `@app.get(\"/refunds\")` gets stranded the same way."
+    },
+    {
+      "type": "body",
+      "title": "Tree-sitter keeps / the [decorator]",
+      "text": "LlamaIndex `CodeSplitter(language=\"python\", max_chars=250)` packs whole syntax-tree nodes up to the limit:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 8 of 8",
+          "code": "{{@retry(times=3)}}\ndef sync_refunds(service, orders):\n    for order in orders:\n        service.gw.sync(order)"
+        }
+      ],
+      "bullets": [
+        "A node over the limit is split into its children, so `class RefundService:` and `def refund(self, order, amount):` each became a chunk of their own.",
+        "The body of `refund` came next, with no function name."
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Size it with / [max_chars]",
+      "text": "In llama-index-core 0.14.25, `CodeSplitter` sizes chunks by `max_chars` (default 1,500), or by `max_tokens` (default 512) with `count_mode=\"token\"`.",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "CodeSplitter(language=\"python\")\n# 778-character file -> {{1 chunk}}\nCodeSplitter(language=\"python\",\n    chunk_lines=5, chunk_lines_overlap=2)\n# -> the same 1 chunk"
+        }
+      ],
+      "bullets": [
+        "`chunk_lines` (default 40) and `chunk_lines_overlap` (15) are stored, but the split code doesn't read them, so chunks get no overlap.",
+        "Set `max_chars` for your embedding model, and check the behavior in the version you install."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Give each chunk / its [address]",
+      "text": "A small chunker on Python's `ast` module: one chunk per function or method, with a header on top. Chunks 3 and 4 of 4 at 1,500 characters:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "{{# billing/refunds.py · class RefundService}}\ndef left(self, order):\n    return order.paid - order.refunded"
+        },
+        {
+          "kind": "code",
+          "code": "{{# billing/refunds.py}}\n@retry(times=3)\ndef sync_refunds(service, orders):\n    for order in orders:\n        service.gw.sync(order)"
+        }
+      ],
+      "bullets": [
+        "Start each chunk at the first decorator: `ast` keeps the `def` line in `lineno` and the decorators in `decorator_list`.",
+        "Constants the function reads join the header: `LIMIT = Decimal(\"500\")` goes with `refund`."
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Split long ones, / keep the [signature]",
+      "text": "At 250 characters, `refund` splits between statements, and each part repeats the signature:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Part 2 of 3",
+          "code": "# billing/refunds.py · class RefundService\n{{LIMIT = Decimal(\"500\")}}\n{{def refund(self, order, amount):  # part 2/3}}\n    if amount > LIMIT:\n        raise ValueError(\"needs approval\")\n    rid = self.gw.refund(order, amount)\n    order.refunded += amount"
+        }
+      ],
+      "bullets": [
+        "Cut only between the body's top-level statements, so an `if` stays with its `raise`.",
+        "Each part's header lists only the constants that part reads: parts 1 and 3 leave `LIMIT` out."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Search found / the [imports]",
+      "text": "BM25 keyword search (`rank_bm25`) over each splitter's chunks at 250 characters, a stand-in for functions longer than your chunk size. Query: \"Where is the 500 refund limit checked?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Characters",
+              "tag": "",
+              "output": "Top hit: the imports block",
+              "state": "bad",
+              "note": "It defines the 500 limit"
+            },
+            {
+              "setting": "Python separators",
+              "tag": "",
+              "output": "Top hit: the imports block",
+              "state": "bad",
+              "note": "2nd: the check, unnamed"
+            },
+            {
+              "setting": "CodeSplitter",
+              "tag": "",
+              "output": "Top hit: the imports block",
+              "state": "bad",
+              "note": "2nd: the bare signature"
+            },
+            {
+              "setting": "ast + header",
+              "tag": "",
+              "output": "Top hit: !!refund part 2/3!!",
+              "state": "good",
+              "note": "The check and the 500 in one chunk"
+            }
+          ]
+        }
+      ],
+      "after": "The 500 sits in a module constant; the header copies it into the chunk that runs the check."
+    },
+    {
+      "type": "body",
+      "title": "Per-function [chunks]: / use or move on",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Questions name a function, a class or a behavior inside one",
+                "The language has a parser: `ast` for Python, tree-sitter for most others",
+                "Most functions fit your chunk size"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Answers follow calls across files: retrieve the callers and callees too",
+                "Files are generated or minified, with no useful function boundaries",
+                "The question is about a whole module: index a file summary as well"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "One chunk per function, decorators included",
+        "Header: file path, class, constants the code reads",
+        "LangChain's Python method separator is `\\n\\tdef `: tabs only",
+        "A `\\ndef ` split can strand a decorator one chunk up",
+        "`CodeSplitter`: set `max_chars`; `chunk_lines` isn't read (0.14.25)",
+        "Long functions: every part repeats the signature",
+        "Test with a real question: which chunk comes back?"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "A table has the same problem as a long function: split it by rows, and repeat the header row in every chunk."
+    }
+  ]
+}

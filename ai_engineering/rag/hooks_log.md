@@ -24,3 +24,4 @@ Rows for RAG #01–#11 were backfilled from the published posts on Oct 31 2026 (
 | RAG #16 | Cut where the meaning jumps between sentences. | Semantic chunking cuts where the meaning jumps between sentences. | B (claim) |
 | RAG #17 | The top 4 chunks all missed the answer. Return the section around the top hit, and size that section yourself. | The top 4 chunks for a warranty question all missed the sentence that answers it. | A (story) |
 | RAG #18 | One sentence reached the model three times, inside overlapping windows. | Sentence-window retrieval in LlamaIndex needs MetadataReplacementPostProcessor, or the model gets one bare sentence. | B (claim) |
+| RAG #19 | Chunk code per function, with its file, class and constants on top. At 250 characters, three splitters sent a search for the refund limit to the imports block. | Chunking code by function, with file, class and constants on top, fixed a search three splitters missed at 250 characters. | A (story) |
