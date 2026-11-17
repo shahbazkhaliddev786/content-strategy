@@ -1,0 +1,233 @@
+{
+  "post": "RAG #20",
+  "module": "RAG chunking",
+  "topic": "Chunking tables",
+  "series": {
+    "name": "Chunking by doc type",
+    "part": 2,
+    "of": 4
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Chunking / [tables]",
+      "hook": "0.005, 0.12 and 90, with no column names: Frankfurt's cold-tier row after a 300-character split. Keep whole rows, with the title and header on every chunk.",
+      "inside": [
+        "Where a 300-character split drops the header",
+        "Row groups with the title and header on top",
+        "What Docling repeats, and what it leaves out",
+        "Questions across rows, and when to use SQL"
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Rows are / the [unit]",
+      "text": "A table answers by row: one entity, its values, and the column names that say what each value means.",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Find the table and its title: the caption, or the heading above it.",
+            "Keep the header rows apart from the body rows.",
+            "Pack whole rows up to the size limit, with rows for the same key (Frankfurt) together.",
+            "Put the title and header on top of every chunk.",
+            "A row too wide for the limit: split by columns and repeat the key column."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Chunk 3 has / no [header]",
+      "text": "LangChain's `RecursiveCharacterTextSplitter`, `chunk_size=300`, no overlap, on an 18-row Markdown price table:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 1 of 4",
+          "code": "Table 4: Storage prices per GB, 2026"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 3 of 4 (first rows)",
+          "code": "| Frankfurt | Hot | 0.024 | 0.08 | 0 |\n| Frankfurt | Cool | 0.014 | 0.10 | 30 |\n{{| Frankfurt | Cold | 0.005 | 0.12 | 90 |}}\n| London | Hot | 0.024 | 0.08 | 0 |"
+        }
+      ],
+      "after": "The title sits alone in chunk 1 and the header in chunk 2. Chunks 3 and 4 are bare rows: nothing says which number is the egress price."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "One-line HTML / cuts [mid-row]",
+      "text": "The same table as HTML on one line has no `\\n` and no spaces between cells, so the splitter cuts at 300 characters:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "End of chunk 2 (wrapped)",
+          "code": "<tr><td>Virginia</td><td>Cold</td>\n<td>0.004</td><td>"
+        },
+        {
+          "kind": "code",
+          "label": "Start of chunk 3",
+          "code": "{{0.09</td>}}<td>90</td></tr>"
+        }
+      ],
+      "bullets": [
+        "Virginia's cold-tier egress price, `0.09`, starts the next chunk, away from its region.",
+        "Chunk 1 ends inside the caption, at `per GB,`.",
+        "Parse HTML tables into rows before you chunk them."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Repeat the / [header]",
+      "text": "Group whole rows by region and put the title and header on top. Chunk 3 of 6 at 300 characters:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "{{Table 4: Storage prices per GB, 2026}}\n{{| Region | Tier | Storage | Egress | Days |}}\n|---|---|---|---|---|\n| Frankfurt | Hot | 0.024 | 0.08 | 0 |\n| Frankfurt | Cool | 0.014 | 0.10 | 30 |\n| Frankfurt | Cold | 0.005 | 0.12 | 90 |"
+        }
+      ],
+      "after": "Each chunk now names its table and its columns, and all three Frankfurt tiers come back together."
+    },
+    {
+      "type": "body",
+      "title": "Whole rows, / grouped by [key]",
+      "text": "The chunker behind that slide (rows sorted by key):",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "md = lambda c: \"| \" + \" | \".join(c) + \" |\"\n\ndef chunk_table(title, header, rows,\n                key=0, max_chars=300):\n    top = [title, md(header),\n           \"|---\" * len(header) + \"|\"]\n    out, cur = [], []\n    for _, g in {{groupby(rows, lambda r: r[key])}}:\n        g = [md(r) for r in g]\n        size = len(\"\\n\".join(top + cur + g))\n        if cur and size > max_chars:\n            out.append(top + cur); cur = []\n        cur += g\n    return [\"\\n\".join(c) for c in out + [top + cur]]"
+        }
+      ],
+      "bullets": [
+        "Title and header: 102 characters, about a third of the 300-character limit.",
+        "A key whose rows pass `max_chars` stays one chunk; split it by rows."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Docling repeats / the [header]",
+      "text": "Docling's `HybridChunker` (docling-core 2.107.1) with `MarkdownTableSerializer` and a word-count tokenizer at `max_tokens=100`:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 2 of 3 (first rows, padding trimmed)",
+          "code": "{{| Region | Tier | Storage | Egress | Days |}}\n|---|---|---|---|---|\n| Frankfurt | Cool | 0.014 | 0.10 | 30 |\n| Frankfurt | Cold | 0.005 | 0.12 | 90 |"
+        }
+      ],
+      "bullets": [
+        "`repeat_table_header=True` is the default. The caption stays in chunk 1 only, so add the title to each chunk yourself.",
+        "Rows aren't grouped by key: Frankfurt Hot ended chunk 1, its other tiers opened chunk 2."
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Wide rows lose / their [key]",
+      "text": "Region plus 12 months at `max_tokens=40` (pipes count as words). The header plus one row passed the limit, so `HybridChunker` split the table by columns:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 1 of 7 (first rows)",
+          "code": "Table 5: GB stored per month, 2026\n| Region |\n| - |\n| Virginia |\n| Oregon |"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 3 of 7 (first rows)",
+          "code": "| Mar | Apr |\n| - | - |\n{{| 102 | 103 |}}\n| 109 | 110 |"
+        }
+      ],
+      "after": "Region sits alone in chunk 1, so no month chunk says whose numbers it holds. Repeat the key column in every column split."
+    },
+    {
+      "type": "body",
+      "title": "Search finds / the [rows]",
+      "text": "BM25 keyword search (`rank_bm25`) over each set of chunks. Query: \"What is the egress price for cold storage in Frankfurt?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Recursive, 300",
+              "tag": "",
+              "output": "Top hit: chunk 3, bare rows",
+              "state": "bad",
+              "note": "No column names in the chunk"
+            },
+            {
+              "setting": "Row groups + header",
+              "tag": "",
+              "output": "Top hit: chunk 3, !!header on top!!",
+              "state": "good",
+              "note": "The header labels 0.12 as Egress"
+            }
+          ]
+        }
+      ],
+      "after": "Both searches return the right rows; the header in the second chunk labels 0.12 as the egress price."
+    },
+    {
+      "type": "body",
+      "title": "Across rows, / use [SQL]",
+      "text": "\"Which region has the cheapest egress for the Cold tier?\" needs all 6 Cold rows. The row groups put one in each of 6 chunks.",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "SQLite, same 18 rows",
+          "code": "SELECT region, egress FROM prices\nWHERE tier = 'Cold' AND egress =\n  (SELECT MIN(egress) FROM prices\n   WHERE tier = 'Cold');\n-- {{Virginia 0.09, Oregon 0.09}}"
+        }
+      ],
+      "bullets": [
+        "Top-3 retrieval returns at most 3 of the 6 rows, and the answer is a tie.",
+        "For totals, rankings and filters, load the table into a database and have the model write SQL (Text-to-SQL)."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Row [chunks]: / use or move on",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Questions look up one entity's values: a region, a plan, a SKU",
+                "Your parser keeps the header row and the caption",
+                "A key's rows fit your chunk size with the header on top"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Questions total, rank or filter across rows: Text-to-SQL",
+                "Cells hold paragraphs: chunk each row as text with its column names",
+                "Rows wider than the limit: split columns, repeat the key"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Chunk whole rows; cut between rows",
+        "Title and header rows on top of every chunk",
+        "Keep rows for the same key in one chunk",
+        "One-line HTML tables: parse into rows first",
+        "Docling repeats the header row; add the caption yourself (2.107.1)",
+        "Over-wide rows: split columns, repeat the key column",
+        "Totals and rankings across rows: Text-to-SQL"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Legal text has its own unit too: the numbered clause, with its section number in every chunk."
+    }
+  ]
+}
