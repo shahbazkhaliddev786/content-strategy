@@ -1,0 +1,210 @@
+{
+  "post": "RAG #21",
+  "module": "RAG chunking",
+  "topic": "Chunking legal documents",
+  "series": {
+    "name": "Chunking by doc type",
+    "part": 3,
+    "of": 4
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Chunking / [legal] docs",
+      "hook": "Ask whether the liability cap covers lost Customer Data, and search hands back the cap, cut off at \"do not apply to:\".",
+      "inside": [
+        "Where a size split drops the exceptions",
+        "Clause chunks with the section path on top",
+        "Long clauses: the lead-in on every piece",
+        "Cross-references, and when to move on"
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The clause is / the [unit]",
+      "text": "A contract answers by clause, and a clause means what it says only with its number, its section and its lead-in.",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Find the structure: sections (8.), clauses (8.2), sub-clauses (8.3(b)).",
+            "One clause per chunk, with its sub-clauses.",
+            "Put the path on top: document > section > clause.",
+            "A clause over the size limit: split at sub-clauses and repeat the lead-in.",
+            "Store the cross-references (\"Section 5.2\") so you can fetch them."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The exceptions / lose their [rule]",
+      "text": "LangChain's `RecursiveCharacterTextSplitter`, `chunk_size=300`, no overlap, on a sample services agreement:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "End of chunk 3 of 5",
+          "code": "8.2 Supplier's total liability under\nthis Agreement shall not exceed the fees\npaid in the 12 months before the claim.\n{{8.3 The limits in Sections 8.1 and 8.2}}\n{{do not apply to:}}"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 4 of 5 (wrapped)",
+          "code": "(a) a party's breach of Section 10\n(Confidentiality);\n(b) loss of Customer Data caused by\nSupplier's failure to keep the backups\nrequired by Section 5.2; or\n(c) fraud or wilful misconduct."
+        }
+      ],
+      "after": "Chunk 4 lists three cases without 8.3 or its lead-in. Nothing in it says the liability limits stop applying."
+    },
+    {
+      "type": "body",
+      "title": "Search returns / the [cap]",
+      "text": "BM25 keyword search (`rank_bm25`) over each set of chunks. Query: \"Does the liability cap apply to loss of Customer Data?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Recursive, 300",
+              "tag": "",
+              "output": "Top hit: chunk 3, the cap in 8.2",
+              "state": "bad",
+              "note": "Chunk 4, the exceptions, ranked 2nd"
+            },
+            {
+              "setting": "Clause chunks",
+              "tag": "",
+              "output": "Top hit: !!8.3(b)!!, lead-in on top",
+              "state": "good",
+              "note": "Lifts the cap for missed backups"
+            }
+          ]
+        }
+      ],
+      "after": "The first top hit states the 12-month cap. The case that lifts it, 8.3(b), is in chunk 4, ranked second."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Clause regex / still [merges]",
+      "text": "Clause numbers as regex separators, at `chunk_size=400`:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "seps = [r\"\\n(?=\\d+\\. )\",      # 8.\n        r\"\\n(?=\\d+\\.\\d+ )\",  # 8.2\n        r\"\\n(?=\\([a-z]\\) )\",  # (b)\n        \"\\n\", \" \", \"\"]\nRecursiveCharacterTextSplitter(\n    chunk_size=400, chunk_overlap=0,\n    separators=seps,\n    {{is_separator_regex=True}})"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 1 of 4 (heading lines shown)",
+          "code": "MASTER SERVICES AGREEMENT\n5. Data Protection\n{{7. Fees and Payment}}"
+        }
+      ],
+      "bullets": [
+        "Clause 8.3 now stays whole, but its chunk has no \"Limitation of Liability\" heading.",
+        "The splitter packs splits up to the size limit, so data protection and fees share chunk 1."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Put the [path] / on top",
+      "text": "Each chunk starts with the document, the section and the clause number:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Clause chunk 6 of 11 (wrapped)",
+          "code": "{{MASTER SERVICES AGREEMENT >}}\n{{8. Limitation of Liability > 8.2}}\n8.2 Supplier's total liability under\nthis Agreement shall not exceed the fees\npaid in the 12 months before the claim."
+        }
+      ],
+      "bullets": [
+        "The chunk names its section, so search and the model both see the topic.",
+        "The answer can cite 8.2 by number. Store the number as metadata too.",
+        "Short clauses stay short: 114 to 222 characters here."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Repeat the / [lead-in]",
+      "text": "With its path, clause 8.3 is 305 characters, over the 300 limit. Split it at (a), (b), (c) and put the 55-character lead-in on each piece:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Clause chunk 8 of 11 (wrapped)",
+          "code": "MASTER SERVICES AGREEMENT >\n8. Limitation of Liability > 8.3(b)\n{{8.3 The limits in Sections 8.1 and 8.2}}\n{{do not apply to:}}\n(b) loss of Customer Data caused by\nSupplier's failure to keep the backups\nrequired by Section 5.2; or"
+        }
+      ],
+      "after": "Each sub-clause now carries the rule it belongs to, the same way a table chunk carries its header row."
+    },
+    {
+      "type": "body",
+      "title": "The clause / [chunker]",
+      "text": "The code behind the clause chunks. It reads one line per clause, so join wrapped lines first:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "def chunk(doc, title, max_chars=300):\n    out, sec, cl = [], \"\", None\n    def flush():\n        if not cl: return\n        no, lead, subs = cl\n        path = f\"{title} > {sec} > {no}\"\n        whole = \"\\n\".join([path, lead, *subs])\n        if len(whole) <= max_chars or not subs:\n            return out.append(whole)\n        for s in subs:  # {{lead-in on each}}\n            out.append(\"\\n\".join(\n                [path + s[:3], lead, s]))\n    for ln in doc.splitlines():\n        if re.match(r\"\\d+\\. \", ln):\n            flush(); cl = None; sec = ln\n        elif m := re.match(r\"(\\d+\\.\\d+) \", ln):\n            flush(); cl = (m[1], ln, [])\n        elif cl and re.match(r\"\\([a-z]\\) \", ln):\n            cl[2].append(ln)\n    flush(); return out"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Fetch the / [references]",
+      "text": "8.3(b) depends on \"the backups required by Section 5.2\". Pull the clause numbers out of each chunk at indexing time:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "def refs(chunk, own):\n    body = chunk.split(\"\\n\", 1)[1]\n    found = re.findall(r\"\\b\\d+\\.\\d+\\b\", body)\n    return [r for r in dict.fromkeys(found)\n            if r != own]\n\nrefs(chunks[7], \"8.3\")\n# {{['8.1', '8.2', '5.2']}}"
+        }
+      ],
+      "bullets": [
+        "Fetch 5.2 with the hit: \"daily backups of Customer Data for at least 30 days\".",
+        "\"Section 10\" in 8.3(a) has no dot, so this pattern misses it. Match whole-section references too.",
+        "Chains of references need multi-hop retrieval, a later post."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Clause [chunks]: / use or move on",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Text has numbered clauses: contracts, policies, terms, regulations",
+                "Questions ask about one obligation or its exceptions",
+                "Answers must cite the section number"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Your parser loses the numbering: fix the parsing first",
+                "Answers span chains of cross-references: multi-hop retrieval",
+                "Questions cover the whole document: summaries per section"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "One clause per chunk, with its sub-clauses",
+        "Split at clause numbers: 8., 8.2, (b)",
+        "Path on top: document > section > clause",
+        "Clause over the limit: split at sub-clauses, repeat the lead-in",
+        "Leave short clauses short; keep sections apart",
+        "Store cross-references; fetch the cited clause with the hit",
+        "Join wrapped lines before matching clause numbers"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Transcripts break the same way: a size split can put a question in one chunk and its answer in the next. Split on speaker turns."
+    }
+  ]
+}
