@@ -1,0 +1,221 @@
+{
+  "post": "RAG #22",
+  "module": "RAG chunking",
+  "topic": "Chunking transcripts",
+  "series": {
+    "name": "Chunking by doc type",
+    "part": 4,
+    "of": 4
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Chunking / [transcripts]",
+      "hook": "When a split lands between a question and its reply, search finds the question and loses the answer. Open each chunk at a question.",
+      "inside": [
+        "Where a size split separates question and answer",
+        "Exchange chunks with the call and time on top",
+        "Long answers: the question on every piece",
+        "Hidden questions, and when to move on"
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Chunk by / [exchange]",
+      "text": "A call is a run of speaker turns, and an answer reads as one only next to the question before it.",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Merge caption lines into one line per speaker turn.",
+            "Keep the speaker label and timestamp on every turn.",
+            "Open a new chunk at each question; run it to the next one.",
+            "Put the call title and the time range on top.",
+            "An exchange over the limit: split the answer, repeat the question on each piece."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Questions lose / their [answers]",
+      "text": "LangChain's `RecursiveCharacterTextSplitter`, `chunk_size=300`, no overlap, on a sample support call:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "End of chunk 3 of 5 (wrapped)",
+          "code": "{{[00:26] Customer: Can we raise that}}\n{{limit without changing plans?}}"
+        },
+        {
+          "kind": "code",
+          "label": "Start of chunk 4 of 5 (wrapped)",
+          "code": "[00:30] Agent: Not on Starter. You can\nadd the --per-table flag so each table\nexports as its own file"
+        }
+      ],
+      "after": "Every cut fell between turns, and two of the four left a question at the end of a chunk with its answer in the next."
+    },
+    {
+      "type": "body",
+      "title": "Search finds / the [question]",
+      "text": "BM25 keyword search (`rank_bm25`) over each set of chunks. Query: \"Can we raise the export limit without changing plans?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Recursive, 300",
+              "tag": "",
+              "output": "Top hit: chunk 3, ends on the question",
+              "state": "bad",
+              "note": "The answer, chunk 4, ranked 2nd"
+            },
+            {
+              "setting": "Exchange chunks",
+              "tag": "",
+              "output": "Top hit: question + !!\"Not on Starter.\"!!",
+              "state": "good",
+              "note": "Both workarounds in the same chunk"
+            }
+          ]
+        }
+      ],
+      "after": "The first top hit holds the 5 GB limit and the question, and stops before the agent answers."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Turn separators / still [pack]",
+      "text": "A timestamp regex as the first separator, same `chunk_size=300`:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "seps = [r\"\\n(?=\\[\\d\\d:\\d\\d\\])\",\n        \"\\n\", \" \", \"\"]\nRecursiveCharacterTextSplitter(\n    chunk_size=300, chunk_overlap=0,\n    separators=seps,\n    {{is_separator_regex=True}})"
+        }
+      ],
+      "bullets": [
+        "4 chunks. Chunks 2 and 3 still end on a question, and the answers open the next chunk.",
+        "The splitter packs whole turns up to 300 characters, whether or not a question has its answer yet."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Open at each / [question]",
+      "text": "Each chunk opens at a question and runs to the next one, with the call title and time range on top:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Exchange chunk 3 of 4 (wrapped)",
+          "code": "{{Support call: nightly export failures,}}\n{{12 Nov [00:26-00:30]}}\n[00:26] Customer: Can we raise that\nlimit without changing plans?\n[00:30] Agent: Not on Starter. You can\nadd the --per-table flag so each table\nexports as its own file, and each file\nstays under 5 GB. Business raises the\nlimit to 50 GB."
+        }
+      ],
+      "bullets": [
+        "Question, answer and both workarounds: one 296-character chunk.",
+        "The 4 exchanges run 201 to 296 characters.",
+        "The time range points to where the exchange sits in the recording."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Repeat the / [question]",
+      "text": "At `size=250`, that 296-character exchange is over the limit. The answer splits at sentence ends, and each piece keeps the question and the speaker label:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 5 of 8 (wrapped)",
+          "code": "Support call: nightly export failures,\n12 Nov [00:26-00:30]\n{{[00:26] Customer: Can we raise that}}\n{{limit without changing plans?}}\n[00:30] Agent: You can add the\n--per-table flag so each table exports\nas its own file, and each file stays\nunder 5 GB."
+        }
+      ],
+      "after": "The workaround still reads as the agent's answer to the customer's question."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The exchange / [chunker]",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "def chunk(text, size=300):\n    title, _, *turns = text.split(\"\\n\")\n    groups = []\n    for t in turns:  # {{new chunk at a question}}\n        if not groups or \"?\" in t:\n            groups.append([])\n        groups[-1].append(t)\n    out = []\n    for q, *rest in groups:\n        end = (rest or [q])[-1][1:6]\n        top = [f\"{title} [{q[1:6]}-{end}]\", q]\n        if len(\"\\n\".join(top + rest)) <= size:\n            out.append(\"\\n\".join(top + rest))\n            continue\n        for t in rest:  # {{question on each piece}}\n            who, said = t.split(\": \", 1)\n            n = size - len(\"\".join(top) + who) - 4\n            for p in split(said, n):\n                out.append(\"\\n\".join(\n                    top + [who + \": \" + p]))\n    return out"
+        }
+      ],
+      "after": "`split()` is LangChain's splitter with `separators=[\". \", \" \"]`."
+    },
+    {
+      "type": "body",
+      "title": "When a question / [hides]",
+      "text": "A first version tested `t.endswith(\"?\")`. Change one turn to \"Which plan is the account on? I can check.\" and compare:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "t.endswith(\"?\")",
+              "tag": "",
+              "output": "\"Starter, I think.\" filed under \"How can I help?\"",
+              "state": "bad",
+              "note": "No new chunk at 00:09"
+            },
+            {
+              "setting": "\"?\" in t",
+              "tag": "",
+              "output": "\"Starter, I think.\" stays with !!\"Which plan\"!!",
+              "state": "good",
+              "note": "4 exchange chunks again"
+            }
+          ]
+        }
+      ],
+      "bullets": [
+        "Caption files (WebVTT) cut one turn into short timed cues. Merge lines from the same speaker first.",
+        "\"Speaker 1\" labels: map them to names or roles before indexing.",
+        "Speech-to-text output without punctuation has no \"?\" to match: restore punctuation first."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Exchange [chunks]: / use or move on",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Support calls, interviews and meetings with speaker labels",
+                "Questions get asked and answered in the call",
+                "Answers must cite a speaker and a timestamp"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "No speaker labels: run speaker diarization first",
+                "One speaker talks for most of the recording: split by topic",
+                "Questions cover the whole call: summaries per call",
+                "Clarifying questions come before the answer: group by topic"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "One line per speaker turn, with label and timestamp",
+        "Open a new chunk at each question",
+        "Title and time range on top of every chunk",
+        "Long answer: split at sentences, repeat the question",
+        "Match \"?\" anywhere in a turn; check your transcripts keep question marks",
+        "Merge caption cues from the same speaker first"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "A chunk pulled out of a long call or document can lose what \"that limit\" refers to. Next: give each chunk a short context before embedding."
+    }
+  ]
+}
