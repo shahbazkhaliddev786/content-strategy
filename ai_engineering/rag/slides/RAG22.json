@@ -1,0 +1,206 @@
+{
+  "post": "RAG #22",
+  "module": "RAG chunking",
+  "topic": "Chunking transcripts",
+  "series": {
+    "name": "Chunking by doc type",
+    "part": 4,
+    "of": 4
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Chunking / [transcripts]",
+      "hook": "Your support-call RAG returns the customer's question and ranks the agent's answer second. Chunk by exchange: each question with its reply, speaker and timestamp on every line.",
+      "inside": [
+        "Where a size split parts a question from its answer",
+        "Exchange chunks: the question with its reply",
+        "Long answers: the question on every piece",
+        "Speakers, timestamps, and when to move on"
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The exchange / is the [unit]",
+      "text": "A transcript answers by exchange: one person asks, another replies. A line often needs its speaker to make sense.",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Parse each line into timestamp, speaker and text.",
+            "Start a new chunk at each turn by the asker, here the customer.",
+            "Keep the replies with it until the next question.",
+            "Exchange over the limit: split the reply at sentences, with the question line on top of each piece.",
+            "Keep speaker and timestamp on every line, and store them as metadata."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The question / loses its [answer]",
+      "text": "LangChain's `RecursiveCharacterTextSplitter`, `chunk_size=300`, no overlap, on a sample support call, one turn per line:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "End of chunk 3 of 6",
+          "code": "[00:47] Agent: It goes back to the\noriginal card in 5 to 10 business days.\n{{[00:55] Customer: OK. And what happens}}\n{{to our files?}}"
+        },
+        {
+          "kind": "code",
+          "label": "Start of chunk 4 of 6 (wrapped)",
+          "code": "[00:59] Agent: Your workspace stays\nread-only for 30 days, so you can\nexport everything. Go to Settings,\nthen Data, then Export..."
+        }
+      ],
+      "after": "The splitter packs turns up to 300 characters. The 00:59 reply alone is longer than 300, so the question closes chunk 3 and the reply starts chunk 4."
+    },
+    {
+      "type": "body",
+      "title": "Search finds / the [question]",
+      "text": "BM25 keyword search (`rank_bm25`) over each set of chunks. Query: \"What happens to our files after we cancel?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Recursive, 300",
+              "tag": "",
+              "output": "Top hit: chunk 3, ends at the question",
+              "state": "bad",
+              "note": "Chunk 4, the answer, ranked 2nd"
+            },
+            {
+              "setting": "Exchange chunks",
+              "tag": "",
+              "output": "Top hit: question + !!its files are deleted!!",
+              "state": "good",
+              "note": "The export steps ranked 2nd"
+            }
+          ]
+        }
+      ],
+      "after": "The first top hit ends at the question mark. With exchange chunks, both pieces of the answer rank first and second."
+    },
+    {
+      "type": "body",
+      "title": "A long turn / drops its [speaker]",
+      "text": "The 00:59 answer runs past 300 characters, so the splitter fell back to spaces. Chunk 5 of 6 in full:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 5 of 6",
+          "code": "{{can't restore them.}}"
+        }
+      ],
+      "bullets": [
+        "19 characters: no speaker, no timestamp, nothing it refers to.",
+        "Query \"Can you restore our files after we cancel?\" ranks it first.",
+        "The model reads \"can't restore them\" with no subject and no speaker."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Group the / [exchange]",
+      "text": "Start a new chunk at each customer turn (the asker), and let the agent's replies join it. One turn per line first:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Exchange chunk 4 of 7 (wrapped)",
+          "code": "{{[00:41] Customer:}} We renewed in March,\nso that works. How long does the\nrefund take?\n{{[00:47] Agent:}} It goes back to the\noriginal card in 5 to 10 business days."
+        }
+      ],
+      "bullets": [
+        "Group by the asker's turns: a chunk per turn would split each question from its reply again.",
+        "Every line keeps its speaker label and timestamp.",
+        "Sizes here: 47 to 285 characters, under the 300 limit."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Repeat the / [question]",
+      "text": "The files exchange runs over 300 characters. Split the answer at sentences and put the question line on each piece:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Exchange chunk 6 of 7 (wrapped)",
+          "code": "{{[00:55] Customer: OK. And what happens}}\n{{to our files?}}\n[00:59] Agent: After the 30 days, the\nworkspace and its files are deleted\nand we can't restore them."
+        }
+      ],
+      "after": "Each piece of the answer carries the question it answers, so either piece can be retrieved alone."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The exchange / [chunker]",
+      "text": "The code behind the exchange chunks. It expects one turn per line, with no blank lines:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "TURN = r\"\\[(\\d\\d:\\d\\d)\\] (\\w+): (.*)\"\ndef chunk(text, asker=\"Customer\", n=300):\n    groups, out = [], []\n    for ln in text.splitlines():\n        if re.match(TURN, ln)[2] == asker or not groups:\n            groups.append([])\n        groups[-1].append(ln)\n    for g in groups:\n        if len(\"\\n\".join(g)) <= n:\n            out.append(\"\\n\".join(g)); continue\n        for ln in g[1:]:  # {{question on each piece}}\n            m = re.match(TURN, ln)\n            head, p = f\"{g[0]}\\n[{m[1]}] {m[2]}: \", \"\"\n            for s in re.split(r\"(?<=[.?!]) \", m[3]):\n                if p and len(head + p + s) > n:\n                    out.append(head + p.strip()); p = \"\"\n                p += s + \" \"\n            out.append(head + p.strip())\n    return out"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Keep the / [timestamps]",
+      "text": "The labels on each line double as metadata. Pull them out at indexing time:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "def meta(c):\n    ts = re.findall(\n        r\"^\\[(\\d\\d:\\d\\d)\\] (\\w+):\", c, re.M)\n    return {\"start\": ts[0][0],\n            \"speakers\": sorted({w for _, w in ts})}\n\nmeta(chunks[5])\n# {{{'start': '00:55',}}\n#  {{'speakers': ['Agent', 'Customer']}}}"
+        }
+      ],
+      "bullets": [
+        "Link each hit to its moment in the recording: 00:55.",
+        "Filter by speaker when the question is what the customer said.",
+        "Many meetings have no single asker. Test other rules, like a turn ending in \"?\", on your own calls."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Exchange [chunks]: / use or move on",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Support calls, interviews, Q&A sessions",
+                "Questions ask what someone said or agreed",
+                "The transcript has speaker labels"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "No speaker labels: diarize the audio first, or chunk by size",
+                "Questions cover the whole meeting: summaries per topic",
+                "Topics drift inside one long turn: semantic chunking"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Chunking at 300? Check the longest single turn first",
+        "Pick the asker per transcript type: customer, interviewer, host",
+        "Speaker label and timestamp on every line",
+        "Long answer: every piece carries its question",
+        "Store start time and speakers; link hits to the recording",
+        "No speaker labels: diarize the audio first"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "An exchange chunk still leaves out which workspace and which plan the call is about. Next: prepend a short context to each chunk before embedding."
+    }
+  ]
+}
