@@ -1,0 +1,265 @@
+{
+  "post": "RAG #22",
+  "module": "RAG chunking",
+  "topic": "Chunking transcripts",
+  "series": {
+    "name": "Chunking by doc type",
+    "part": 4,
+    "of": 4
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Chunking / [transcripts]",
+      "hook": "Customer: \"And if I upgrade mid-month, what happens to the bill?\" A 200-character split puts the agent's answer in the next chunk.",
+      "inside": [
+        "Where a size split leaves the answer behind",
+        "Why chunk_size and overlap only move the cut",
+        "Exchange chunks with speaker and time on top",
+        "Long replies: the question on every piece"
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "One [exchange] / per chunk",
+      "text": "A call, meeting or interview is a list of speaker turns. Questions get answered in the turns after them, so chunk by exchange:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Parse each turn: timestamp, speaker, text.",
+            "Start a chunk at each new question and add the replies that follow.",
+            "Fold short turns (\"OK.\", \"Great, thanks.\") into the exchange around them.",
+            "Put a header on top: call title and time span.",
+            "A reply over the size limit: split at sentences, repeat the question and the speaker label on each piece."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The reply lands / one chunk [later]",
+      "text": "LangChain's `RecursiveCharacterTextSplitter`, `chunk_size=200`, no overlap, on a sample support call:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "Chunk 6 of 7",
+          "code": "[00:00:58] Customer: OK.\n[00:00:59] Customer: {{And if I upgrade}}\n{{mid-month, what happens to the bill?}}"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 7 of 7 (wrapped)",
+          "code": "[00:01:04] Agent: You pay the difference\nfor the rest of the month, {{prorated by}}\n{{day}}. Your next invoice shows the Pro\nprice.\n[00:01:12] Customer: Great, thanks."
+        }
+      ],
+      "after": "All three questions on the call end a chunk, and each answer opens the next one."
+    },
+    {
+      "type": "body",
+      "title": "Search returns / the [question]",
+      "text": "BM25 keyword search (`rank_bm25`) over each set of chunks. Query: \"What happens to the bill if I upgrade mid-month?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Recursive, 200",
+              "tag": "",
+              "output": "Top hit: chunk 6, the question alone",
+              "state": "bad",
+              "note": "The answer chunk ranks 5th of 7"
+            },
+            {
+              "setting": "Exchange chunks",
+              "tag": "",
+              "output": "Top hit: question + !!prorated by day!!",
+              "state": "good",
+              "note": "Question and reply in one chunk"
+            }
+          ]
+        }
+      ],
+      "after": "The question matches the query's words best, so a chunk holding only the question wins the search."
+    },
+    {
+      "type": "body",
+      "title": "A bigger size / [moves] the cut",
+      "text": "Same call, no overlap. Questions that share a chunk with the start of their answer:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "chunk_size=200",
+              "tag": "",
+              "output": "0 of 3 questions",
+              "state": "bad",
+              "note": "7 chunks"
+            },
+            {
+              "setting": "chunk_size=300",
+              "tag": "",
+              "output": "2 of 3 questions",
+              "state": "bad",
+              "note": "4 chunks"
+            },
+            {
+              "setting": "chunk_size=400",
+              "tag": "",
+              "output": "0 of 3 questions",
+              "state": "bad",
+              "note": "4 chunks"
+            }
+          ]
+        }
+      ],
+      "bullets": [
+        "55 of 56 sizes from 150 to 700 (steps of 10) split at least one pair.",
+        "450 kept all three together, on this call. The next call has different turn lengths."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Overlap [skips] / whole turns",
+      "text": "The splitter carries a turn into the next chunk only if that turn fits inside `chunk_overlap`. Here every question and answer is over 60 characters.",
+      "visuals": [
+        {
+          "kind": "variants",
+          "caption": "chunk_size=200, same call",
+          "options": [
+            {
+              "setting": "chunk_overlap=0",
+              "tag": "",
+              "output": "0 of 3 questions with an answer",
+              "state": "bad",
+              "note": ""
+            },
+            {
+              "setting": "chunk_overlap=50",
+              "tag": "",
+              "output": "0 of 3; one chunk changed",
+              "state": "bad",
+              "note": "Inside the long reply"
+            },
+            {
+              "setting": "chunk_overlap=100",
+              "tag": "",
+              "output": "1 of 3, in 9 chunks",
+              "state": "neutral",
+              "note": "Repeats whole turns"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Monologues lose / the [speaker]",
+      "text": "One 289-character turn explains API paging. At `chunk_size=200`, it splits mid-sentence:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "End of chunk 4 of 7",
+          "code": "...so your 250,000-row table takes 50\nrequests. {{Pass the}}"
+        },
+        {
+          "kind": "code",
+          "label": "Chunk 5 of 7 (wrapped)",
+          "code": "{{cursor from each response}} to get the\nnext page, and stop when the response\nhas no cursor."
+        }
+      ],
+      "bullets": [
+        "Chunk 5 has no speaker, timestamp or question.",
+        "Search can still match it, and nothing in it says who said it or what it answers."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Group turns into / [exchanges]",
+      "text": "A new exchange starts when the customer speaks after a reply. Trailing turns join the last exchange:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "TURN = re.compile(r\"\\[(\\S+)\\] (\\w+): (.*)\")\n\ndef exchanges(text, asker=\"Customer\"):\n    ex = [[]]\n    for t, who, said in TURN.findall(text):\n        asked = any(w == asker\n                    for _, w, _ in ex[-1])\n        if (who == asker and asked\n                and ex[-1][-1][1] != asker):\n            ex.append([])  # {{next question}}\n        ex[-1].append((t, who, said))\n    if {w for _, w, _ in ex[-1]} == {asker}:\n        tail = ex.pop()\n        ex[-1] += tail  # \"Great, thanks.\"\n    return ex\n\n[(e[0][0], len(e)) for e in exchanges(T)]\n# {{[('00:00:04', 3), ('00:00:21', 2),}}\n# {{ ('00:00:36', 2), ('00:00:58', 4)]}}"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The exchange / [chunker]",
+      "text": "One chunk per exchange, with a header. Over the limit, the question goes on every piece:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "def chunk(text, title, asker, max_chars=300):\n    out = []\n    for ex in exchanges(text, asker):\n        span = f\"{ex[0][0]}-{ex[-1][0]}\"\n        head = f\"{title} · {span}\"\n        lines = [f\"[{t}] {w}: {s}\"\n                 for t, w, s in ex]\n        whole = \"\\n\".join([head, *lines])\n        if len(whole) <= max_chars:\n            out.append(whole); continue\n        qs = [l for l, x in zip(lines, ex)\n              if x[1] == asker]\n        for t, w, s in ex:\n            if w == asker: continue\n            lab = f\"[{t}] {w}:\"\n            top = \"\\n\".join([head, *qs, lab])\n            room = max_chars - len(top) - 1\n            for p in pack(s, room):\n                out.append(f\"{top} {p}\")\n    return out"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Long replies keep / the [question]",
+      "text": "`pack()` fills each piece with whole sentences. The 289-character turn becomes two chunks, both under 300:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "def pack(said, room):\n    ps = []\n    for s in re.split(r\"(?<=[.?!]) \", said):\n        if ps and len(ps[-1] + s) < room:\n            ps[-1] += \" \" + s\n        else:\n            ps.append(s)\n    return ps"
+        },
+        {
+          "kind": "code",
+          "label": "Exchange chunk 4 of 5 (wrapped)",
+          "code": "Acme support call · 00:00:36-00:00:40\n{{[00:00:36] Customer: Does the API count}}\n{{against my monthly quota?}}\n{{[00:00:40] Agent:}} Pass the cursor from\neach response to get the next page, and\nstop when the response has no cursor."
+        }
+      ],
+      "after": "A single sentence longer than the room stays whole; split those by words."
+    },
+    {
+      "type": "body",
+      "title": "Exchange [chunks]: / use or move on",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Text is turns: support calls, meetings, interviews, chat logs",
+                "Questions ask what was said or agreed on a call",
+                "Answers must point to a time in the recording"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "No speaker labels: run speaker diarization first",
+                "One person talks for an hour (a lecture): split by topic",
+                "Questions cover the whole call: a summary per call"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "One question and its replies per chunk",
+        "Keep the speaker label and timestamp on every turn",
+        "Header on top: call title and time span",
+        "Fold \"OK.\" and \"Thanks\" into the nearby exchange",
+        "Long reply: split at sentences, repeat the question and speaker",
+        "Store start and end times as metadata",
+        "Re-tuning chunk_size or overlap moves the cut to other turns"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Exchange chunks carry their call title on top. A chunk cut from a long report can say \"the company\" without saying which. Contextual retrieval adds a short, chunk-specific context before embedding."
+    }
+  ]
+}
