@@ -29,7 +29,7 @@
           "kind": "steps",
           "steps": [
             "Parse each turn: timestamp, speaker, text.",
-            "Start a chunk at each new question and add the replies that follow.",
+            "Start a chunk when the customer speaks after a reply, and add the replies that follow.",
             "Fold short turns (\"OK.\", \"Great, thanks.\") into the exchange around them.",
             "Put a header on top: call title and time span.",
             "A reply over the size limit: split at sentences, repeat the question and the speaker label on each piece."
@@ -213,7 +213,7 @@
           "code": "Acme support call · 00:00:36-00:00:40\n{{[00:00:36] Customer: Does the API count}}\n{{against my monthly quota?}}\n{{[00:00:40] Agent:}} Pass the cursor from\neach response to get the next page, and\nstop when the response has no cursor."
         }
       ],
-      "after": "A single sentence longer than the room stays whole; split those by words."
+      "after": "A sentence longer than the room stays whole; split it by words."
     },
     {
       "type": "body",
@@ -236,7 +236,7 @@
               "title": "Move on when",
               "items": [
                 "No speaker labels: run speaker diarization first",
-                "One person talks for an hour (a lecture): split by topic",
+                "One speaker for an hour (a lecture): split by topic",
                 "Questions cover the whole call: a summary per call"
               ]
             }
