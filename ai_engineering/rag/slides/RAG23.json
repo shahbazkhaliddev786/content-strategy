@@ -1,0 +1,283 @@
+{
+  "post": "RAG #23",
+  "module": "RAG chunking",
+  "topic": "Contextual retrieval",
+  "series": null,
+  "slides": [
+    {
+      "type": "cover",
+      "title": "[Contextual] / retrieval",
+      "hook": "ACME's Q2 2023 revenue growth sits in a chunk that never names ACME or Q2. Put a short line of context on each chunk before you index it.",
+      "inside": [
+        "A real BM25 run: the answer ties for 5th",
+        "A free fix: title and heading on every chunk",
+        "Anthropic's numbers: 5.7% to 2.9% failed",
+        "When a context line pulls the wrong chunk up"
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Chunks lose / their [subject]",
+      "text": "Anthropic's Contextual Retrieval post (Sep 2024) starts from a chunk of an SEC filing:",
+      "visuals": [
+        {
+          "kind": "code",
+          "label": "The chunk as split",
+          "code": "The company's revenue grew by 3% over\nthe previous quarter."
+        },
+        {
+          "kind": "code",
+          "label": "With context prepended",
+          "code": "{{This chunk is from an SEC filing on}}\n{{ACME corp's performance in Q2 2023;}}\n{{the previous quarter's revenue was}}\n{{$314 million.}} The company's revenue\ngrew by 3% over the previous quarter."
+        }
+      ],
+      "after": "Asked about ACME's Q2 2023 growth, search has no word in the first chunk to match ACME or the quarter."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "One LLM call / per [chunk]",
+      "text": "Contextual retrieval changes ingest only. Query-side search stays the same:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Split each document into chunks as usual.",
+            "For each chunk, send a small LLM the whole document and the chunk.",
+            "Get back a short context, usually 50 to 100 tokens.",
+            "Prepend it to the chunk.",
+            "Embed that text and add the same text to the BM25 index."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "The answer ties / for [5th]",
+      "text": "Test: 16 made-up quarterly reports (4 companies, Q1 to Q4 2023), split at `chunk_size=150` characters into 96 chunks. BM25 via `rank_bm25`.",
+      "visuals": [
+        {
+          "kind": "variants",
+          "caption": "\"What was the revenue growth for ACME Corp in Q2 2023?\"",
+          "options": [
+            {
+              "setting": "Hits 1 to 4",
+              "tag": "",
+              "output": "ACME's four Overview chunks, 7.65 each",
+              "state": "bad",
+              "note": "They name ACME, and say nothing about revenue"
+            },
+            {
+              "setting": "The answer",
+              "tag": "",
+              "output": "3.62, tied with all 16 Results chunks",
+              "state": "bad",
+              "note": "Ranks 5 to 20, in index order"
+            }
+          ]
+        }
+      ],
+      "after": "All 16 Results chunks share the same four words with the query: \"the\", \"revenue\", \"was\" and \"in\"."
+    },
+    {
+      "type": "body",
+      "title": "Title and heading / come [free]",
+      "text": "Before paying for an LLM call, prepend what the document already knows:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "{{ACME Corp · Q2 2023 quarterly report ·}}\n{{Results}}\n## Results\nThe company's revenue grew by 3% over\nthe previous quarter.\n\n## Margin\nGross margin was 40%, and operating costs\nwere in line with plan."
+        },
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "No prefix",
+              "tag": "",
+              "output": "Answer ties for 5th (3.62)",
+              "state": "bad",
+              "note": ""
+            },
+            {
+              "setting": "Title + heading",
+              "tag": "",
+              "output": "Answer ranks 1st (6.81)",
+              "state": "good",
+              "note": "Next: ACME Q1, Q3 and Q4 Results, 5.89"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The context / [prompt]",
+      "text": "A title says who and when. The LLM adds what the chunk is about and facts it leans on from elsewhere in the document. Anthropic's prompt:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "DOC = \"<document>\\n{doc}\\n</document>\"\nCHUNK = \"\"\"Here is the chunk we want to\nsituate within the whole document\n<chunk>\n{chunk}\n</chunk>\n{{Please give a short succinct context}}\n{{to situate this chunk within the}}\n{{overall document for the purposes of}}\n{{improving search retrieval of the}}\n{{chunk. Answer only with the succinct}}\n{{context and nothing else.}}\"\"\""
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Cache the / [document]",
+      "text": "Every chunk of a document sends the same document. Mark it for prompt caching: if it's long enough to cache and the calls come close together, later calls read it from the cache:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "import anthropic\nclient = anthropic.Anthropic()\n\ndef context_for(doc, chunk, model):\n    r = client.messages.create(\n        model=model, max_tokens=150,\n        messages=[{\"role\": \"user\",\n                   \"content\": [\n            {\"type\": \"text\",\n             \"text\": DOC.format(doc=doc),\n             {{\"cache_control\":}}\n                 {\"type\": \"ephemeral\"}},\n            {\"type\": \"text\",\n             \"text\": CHUNK.format(\n                 chunk=chunk)}]}])\n    return r.content[0].text\n\ntext = context_for(d, c, m) + \"\\n\" + c"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Failed retrievals / [down] 49%",
+      "text": "Anthropic's test: the share of relevant chunks missing from the top 20 (1 minus recall@20), averaged across their datasets, with Gemini Text 004 embeddings.",
+      "visuals": [
+        {
+          "kind": "bars",
+          "max": 6,
+          "rows": [
+            {
+              "label": "Plain",
+              "value": 5.7,
+              "text": "5.7%",
+              "state": "bad"
+            },
+            {
+              "label": "Emb",
+              "value": 3.7,
+              "text": "3.7%"
+            },
+            {
+              "label": "+BM25",
+              "value": 2.9,
+              "text": "2.9%"
+            },
+            {
+              "label": "+RR",
+              "value": 1.9,
+              "text": "1.9%"
+            }
+          ]
+        }
+      ],
+      "bullets": [
+        "Emb: contextual embeddings. +BM25: contextual BM25 added.",
+        "+RR: reranked by Cohere, 150 candidates cut to 20.",
+        "35% and 49% fewer failures; 67% with the reranker."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "You pay once, / at [ingest]",
+      "text": "The context is written when you index. A query makes no extra LLM call; each retrieved chunk is 50 to 100 tokens longer:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Ingest",
+              "tag": "",
+              "output": "One LLM call per chunk",
+              "state": "bad",
+              "note": "Cache the document; each chunk is sent once"
+            },
+            {
+              "setting": "Query",
+              "tag": "",
+              "output": "No extra call",
+              "state": "good",
+              "note": "Same search, slightly longer chunks"
+            },
+            {
+              "setting": "Doc update",
+              "tag": "",
+              "output": "Re-run that doc's chunks",
+              "state": "neutral",
+              "note": "Each context is written from the whole doc"
+            }
+          ]
+        }
+      ],
+      "after": "Anthropic's estimate with prompt caching: $1.02 per million document tokens, for 800-token chunks and 8k-token documents."
+    },
+    {
+      "type": "body",
+      "title": "Context can pull / the [wrong] chunk",
+      "text": "Same test, with a template context line on all 96 chunks (no LLM call):",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {
+              "setting": "Q2 Results",
+              "tag": "",
+              "output": "\"...Q2 2023 quarterly report and gives the quarter's revenue growth over Q1 2023.\"",
+              "state": "good",
+              "note": "9.06, the answer"
+            },
+            {
+              "setting": "Q3 Results",
+              "tag": "",
+              "output": "\"...Q3 2023 quarterly report and gives the quarter's revenue growth over !!Q2 2023!!.\"",
+              "state": "bad",
+              "note": "9.06, a tie"
+            }
+          ]
+        }
+      ],
+      "after": "The Q3 line is correct, but naming Q2 2023 gives it the query's terms. Test real queries on a sample first."
+    },
+    {
+      "type": "body",
+      "title": "Contextual retrieval: / use or [skip]",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Use it when",
+              "items": [
+                "Chunks point elsewhere: \"the company\", \"this clause\", \"the previous quarter\"",
+                "Many documents share one layout: quarterly reports, contracts, manuals",
+                "One LLM call per chunk at ingest fits your budget"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "The knowledge base is under 200,000 tokens: Anthropic suggests putting it all in the prompt",
+                "Each chunk stands alone: FAQ entries, product records",
+                "Title + heading already ranks the answers first in your eval"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Prepend 50 to 100 tokens of context to each chunk",
+        "Embed that text and put the same text in BM25",
+        "Try title + section heading first: no LLM call",
+        "One LLM call per chunk at ingest; cache the document",
+        "Re-run a document's contexts when it changes",
+        "Context that names other periods can tie: test queries first",
+        "Measure recall@20 before and after"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "A context line tells each chunk where it came from. Chunk size decides what one vector holds, and a retrieval eval is how you set size and overlap."
+    }
+  ]
+}
