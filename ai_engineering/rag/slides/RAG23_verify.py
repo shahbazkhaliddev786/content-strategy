@@ -148,7 +148,10 @@ class FakeClient:
     messages = FakeMsgs()
 anthropic.Anthropic = lambda: FakeClient()
 code7 = codes(s7)[0]
-exec(code7.replace("text = context_for(d, c, m)", "d, c, m = 'DOCTEXT', 'CHUNKTEXT', 'model-x'\ntext = context_for(d, c, m)"), ns)
+check("CACHE label on slide", [v for v in s7["visuals"] if v["kind"] == "code"][0].get("label") == 'CACHE = {"type": "ephemeral"}')
+check("lead says to index context + newline + chunk", 'index `context + "\\n" + chunk`' in s7["text"])
+exec("import anthropic\nclient = anthropic.Anthropic()\nCACHE = {\"type\": \"ephemeral\"}\n" + code7
+     + "\nd, c, m = 'DOCTEXT', 'CHUNKTEXT', 'model-x'\ntext = context_for(d, c, m) + \"\\n\" + c", ns)
 blocks = seen["messages"][0]["content"]
 check("request: doc block cached, chunk block not",
       blocks[0]["cache_control"] == {"type": "ephemeral"} and "DOCTEXT" in blocks[0]["text"]

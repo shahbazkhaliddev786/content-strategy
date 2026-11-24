@@ -7,7 +7,7 @@
     {
       "type": "cover",
       "title": "[Contextual] / retrieval",
-      "hook": "ACME's Q2 2023 revenue growth sits in a chunk that never names ACME or Q2. Put a short line of context on each chunk before you index it.",
+      "hook": "Search for ACME's Q2 growth, and BM25 ties the answer for 5th with 15 other quarters' results.",
       "inside": [
         "A real BM25 run: the answer ties for 5th",
         "A free fix: title and heading on every chunk",
@@ -125,11 +125,12 @@
       "type": "body",
       "instagram": false,
       "title": "Cache the / [document]",
-      "text": "Every chunk of a document sends the same document. Mark it for prompt caching: if it's long enough to cache and the calls come close together, later calls read it from the cache:",
+      "text": "Every chunk of a document sends the same document. Mark it for prompt caching: if it's long enough to cache and the calls come close together, later calls read it from the cache. Then index `context + \"\\n\" + chunk`.",
       "visuals": [
         {
           "kind": "code",
-          "code": "import anthropic\nclient = anthropic.Anthropic()\n\ndef context_for(doc, chunk, model):\n    r = client.messages.create(\n        model=model, max_tokens=150,\n        messages=[{\"role\": \"user\",\n                   \"content\": [\n            {\"type\": \"text\",\n             \"text\": DOC.format(doc=doc),\n             {{\"cache_control\":}}\n                 {\"type\": \"ephemeral\"}},\n            {\"type\": \"text\",\n             \"text\": CHUNK.format(\n                 chunk=chunk)}]}])\n    return r.content[0].text\n\ntext = context_for(d, c, m) + \"\\n\" + c"
+          "code": "def context_for(doc, chunk, model):\n    content = [\n      {\"type\": \"text\", {{\"cache_control\": CACHE}},\n       \"text\": DOC.format(doc=doc)},\n      {\"type\": \"text\",\n       \"text\": CHUNK.format(chunk=chunk)}]\n    r = client.messages.create(\n        model=model, max_tokens=150,\n        messages=[{\"role\": \"user\",\n                   \"content\": content}])\n    return r.content[0].text",
+          "label": "CACHE = {\"type\": \"ephemeral\"}"
         }
       ]
     },
@@ -271,7 +272,7 @@
         "Try title + section heading first: no LLM call",
         "One LLM call per chunk at ingest; cache the document",
         "Re-run a document's contexts when it changes",
-        "Context that names other periods can tie: test queries first",
+        "A context line naming another quarter can tie: test real queries",
         "Measure recall@20 before and after"
       ]
     },
