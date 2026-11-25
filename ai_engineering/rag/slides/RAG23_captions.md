@@ -1,11 +1,11 @@
-Status: draft (not posted 24 Nov 2026: both rubric reviews returned revise; the second review's 3 fixes applied, needs a fresh review)
+Status: draft (25 Nov 2026: fresh review 1 returned revise (hook pattern repeated RAG #21); its fixes applied; fresh review 2 passed, minor caption fix applied)
 
 ## LinkedIn
 
 The chunk that answers "ACME's revenue growth in Q2 2023?" says only "the company's revenue grew by 3%".
 Contextual retrieval adds a line of context to each chunk before indexing.
 
-The test: 16 made-up quarterly reports, 96 chunks, BM25 search for "What was the revenue growth for ACME Corp in Q2 2023?" ACME's four Overview chunks came first. The answer chunk never names ACME or Q2, so it tied for 5th with all 16 Results chunks.
+In a test with 16 made-up quarterly reports and 96 chunks, a BM25 search for "What was the revenue growth for ACME Corp in Q2 2023?" ranked ACME's four Overview chunks first. The answer chunk never names ACME or Q2, so it tied for 5th with the other 15 Results chunks.
 
 The document title and section heading on every chunk, with no LLM call, moved the answer to 1st.
 
@@ -26,7 +26,7 @@ Tomorrow: tuning chunk size
 The chunk that answers "ACME's revenue growth in Q2 2023?" says only "the company's revenue grew by 3%".
 Contextual retrieval adds a line of context to each chunk before indexing.
 
-The test: 16 made-up quarterly reports, 96 chunks, BM25 search for "What was the revenue growth for ACME Corp in Q2 2023?" ACME's four Overview chunks came first. The answer chunk never names ACME or Q2, so it tied for 5th with all 16 Results chunks.
+In a test with 16 made-up quarterly reports and 96 chunks, a BM25 search for "What was the revenue growth for ACME Corp in Q2 2023?" ranked ACME's four Overview chunks first. The answer chunk never names ACME or Q2, so it tied for 5th with the other 15 Results chunks.
 
 The document title and section heading on every chunk, with no LLM call, moved the answer to 1st.
 
@@ -58,12 +58,12 @@ Contextual retrieval: put a short line of context on each chunk before you embed
 
 A chunk that says "the company's revenue grew by 3%" never tells search which company, or which quarter.
 
-Tweet 2 (268 chars):
-Test: 16 made-up quarterly reports, 96 chunks, BM25.
+Tweet 2 (275 chars):
+16 made-up quarterly reports, 96 chunks, BM25 search.
 
 Query: "What was the revenue growth for ACME Corp in Q2 2023?"
 
-Top 4 hits: ACME's Overview chunks. The answer tied for 5th with all 16 Results chunks.
+Top 4 hits: ACME's Overview chunks. The answer tied for 5th with the other 15 Results chunks.
 
 Title + section heading on every chunk: the answer ranks 1st.
 
@@ -91,7 +91,7 @@ Contextual retrieval | RAG series
 
 ## hooks_log row
 
-| RAG #23 | Search for ACME's Q2 growth, and BM25 ties the answer for 5th with 15 other quarters' results. | The chunk that answers "ACME's revenue growth in Q2 2023?" says only "the company's revenue grew by 3%". | A (story) |
+| RAG #23 | BM25 put the answer to ACME's Q2 growth question in a 16-way tie for 5th, behind four chunks that never mention revenue. | The chunk that answers "ACME's revenue growth in Q2 2023?" says only "the company's revenue grew by 3%". | A (story) |
 
 ## Caption shape
 

@@ -7,7 +7,7 @@
     {
       "type": "cover",
       "title": "[Contextual] / retrieval",
-      "hook": "Search for ACME's Q2 growth, and BM25 ties the answer for 5th with 15 other quarters' results.",
+      "hook": "BM25 put the answer to ACME's Q2 growth question in a 16-way tie for 5th, behind four chunks that never mention revenue.",
       "inside": [
         "A real BM25 run: the answer ties for 5th",
         "A free fix: title and heading on every chunk",
@@ -70,7 +70,7 @@
             {
               "setting": "The answer",
               "tag": "",
-              "output": "3.62, tied with all 16 Results chunks",
+              "output": "3.62, tied with the other 15 Results chunks",
               "state": "bad",
               "note": "Ranks 5 to 20, in index order"
             }
@@ -267,10 +267,10 @@
       "type": "cheatsheet",
       "title": "[Cheat] sheet",
       "rows": [
-        "Prepend 50 to 100 tokens of context to each chunk",
+        "Prepend 50 to 100 tokens of context",
         "Embed that text and put the same text in BM25",
         "Try title + section heading first: no LLM call",
-        "One LLM call per chunk at ingest; cache the document",
+        "One LLM call per chunk; cache the document",
         "Re-run a document's contexts when it changes",
         "A context line naming another quarter can tie: test real queries",
         "Measure recall@20 before and after"

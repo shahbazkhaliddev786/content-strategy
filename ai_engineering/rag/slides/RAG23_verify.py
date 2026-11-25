@@ -96,7 +96,7 @@ tied = [k for k in keys if sc[k] == 3.62]
 check("answer 3.62, tied with all 16 Results chunks at ranks 5-20",
       sc[T] == 3.62 and len(tied) == 16 and all(k[2] == "Results" for k in tied)
       and keys[4:20] == tied and sc[keys[20]] < 3.62
-      and "all 16 Results chunks" in opts(s3)[1]["output"] and "Ranks 5 to 20" in opts(s3)[1]["note"])
+      and "the other 15 Results chunks" in opts(s3)[1]["output"] and "Ranks 5 to 20" in opts(s3)[1]["note"])
 check("overview chunks say nothing about revenue", all("revenue" not in t for k, t in ch if k[2] == "Overview"))
 target_text = dict(ch)[T]
 check("every Results chunk shares only the, revenue, was, in with the query",
