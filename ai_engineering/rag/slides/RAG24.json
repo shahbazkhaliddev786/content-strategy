@@ -1,0 +1,223 @@
+{
+  "post": "RAG #24",
+  "module": "RAG chunking",
+  "topic": "Tuning chunk size",
+  "series": null,
+  "slides": [
+    {
+      "type": "cover",
+      "title": "Tuning / [chunk] size",
+      "hook": "Top-3 retrieval made 500-character chunks look best: 19 of 20 answers found. At a 400-character context budget, they found 9, the fewest of six sizes.",
+      "inside": [
+        "A 60-character split that loses the subject",
+        "A 500-character chunk that ranks the wrong section",
+        "Why top-3 flatters big chunks",
+        "One context cap for every size"
+      ]
+    },
+    {
+      "type": "body",
+      "title": "One chunk, / one [vector]",
+      "text": "Chunk size decides what a single vector has to stand for. Test set: 6 made-up help-centre sections, 2,782 characters, 20 questions.",
+      "visuals": [
+        {
+          "kind": "variants",
+          "caption": "RecursiveCharacterTextSplitter, chunk_overlap=0",
+          "options": [
+            {"setting": "chunk_size=60", "tag": "", "output": "68 chunks, about one clause each", "state": "neutral", "note": "Sharp, but often missing its subject"},
+            {"setting": "chunk_size=150", "tag": "", "output": "27 chunks, about one paragraph each", "state": "neutral", "note": ""},
+            {"setting": "chunk_size=500", "tag": "", "output": "7 chunks, about one section each", "state": "neutral", "note": ""}
+          ]
+        }
+      ],
+      "after": "The embedding here is spaCy's `en_core_web_md`: a chunk's vector is the average of its word vectors."
+    },
+    {
+      "type": "body",
+      "title": "Small chunks / lose the [subject]",
+      "text": "At `chunk_size=60`, the audit-log answer is cut in two:",
+      "visuals": [
+        {
+          "kind": "chunks",
+          "state": "bad",
+          "caption": "chunk_size=60, chunk_overlap=0",
+          "chunks": ["Audit logs are kept for 1 year on the Business plan and !!3!!", "!!years on Enterprise.!!"],
+          "cut": 1,
+          "compact": true
+        }
+      ],
+      "bullets": [
+        "\"How long are audit logs kept on Enterprise?\" returns \"years on Enterprise.\" first: no number, no audit logs.",
+        "\"When are invoices due?\" returns \"invoice.\" first."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Big chunks / [blur] facts",
+      "text": "Same question, two sizes: \"Can I get a refund on a monthly plan?\"",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {"setting": "chunk_size=150", "tag": "1st, 0.925", "output": "\"Monthly plans are never refunded, but you can cancel at any time and keep access until the period ends.\"", "state": "good", "note": "The answer"},
+            {"setting": "chunk_size=500", "tag": "1st, 0.918", "output": "The whole \"Seats and billing\" section", "state": "bad", "note": "No refund rule in it. The Refunds section is 2nd, at 0.916"}
+          ]
+        }
+      ],
+      "after": "At 500, each vector averages about a whole section, and the two sections score 0.002 apart."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Overlap repeats / whole [pieces]",
+      "text": "`RecursiveCharacterTextSplitter` carries over the last whole pieces that together fit in `chunk_overlap`. Measure what it adds:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {"setting": "200 → overlap 40", "tag": "", "output": "21 chunks, 2,755 characters, with or without overlap", "state": "neutral", "note": "Every piece is a paragraph, longer than 40"},
+            {"setting": "60 → overlap 12", "tag": "", "output": "70 chunks, 2,925 characters (8% more)", "state": "good", "note": "\"plan and 3 years on Enterprise.\" is now one chunk"}
+          ]
+        }
+      ],
+      "after": "At 60, overlap 12 moved top-3 found from 7 to 8 of 20, for 8% more text to embed and store."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "Size in the / model's [tokens]",
+      "text": "`chunk_size` counts characters by default (`length_function=len`). The embedding model counts tokens:",
+      "visuals": [
+        {
+          "kind": "code",
+          "code": "splitter = (RecursiveCharacterTextSplitter\n    .from_tiktoken_encoder(\n        {{model_name=\"text-embedding-3-small\"}},\n        chunk_size=256, chunk_overlap=32))"
+        }
+      ],
+      "bullets": [
+        "all-MiniLM-L6-v2: input longer than 256 word pieces is truncated by default (model card).",
+        "OpenAI text-embedding-3-small: max input 8,192 tokens.",
+        "Count with the embedding model's own tokenizer."
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Top-3 makes / big chunks [win]",
+      "text": "Found: the answer text sits whole in a retrieved chunk. Top 3 chunks at each size, spaCy vectors:",
+      "visuals": [
+        {
+          "kind": "bars",
+          "caption": "Questions answered, of 20",
+          "max": 20,
+          "rows": [
+            {"label": "60", "value": 7, "text": "7"},
+            {"label": "100", "value": 9, "text": "9"},
+            {"label": "150", "value": 13, "text": "13"},
+            {"label": "200", "value": 14, "text": "14"},
+            {"label": "300", "value": 16, "text": "16"},
+            {"label": "500", "value": 19, "text": "19"}
+          ]
+        }
+      ],
+      "after": "At 500, the top 3 is 3 of 7 chunks in the whole index."
+    },
+    {
+      "type": "body",
+      "title": "Cap the context / [budget]",
+      "text": "Same test, capped at 400 characters: whole chunks in rank order while they fit, always at least one.",
+      "visuals": [
+        {
+          "kind": "bars",
+          "caption": "Questions answered, of 20",
+          "max": 20,
+          "rows": [
+            {"label": "60", "value": 10, "text": "10"},
+            {"label": "100", "value": 13, "text": "13"},
+            {"label": "150", "value": 13, "text": "13"},
+            {"label": "200", "value": 12, "text": "12"},
+            {"label": "300", "value": 12, "text": "12"},
+            {"label": "500", "value": 9, "text": "9", "state": "bad"}
+          ]
+        }
+      ],
+      "after": "At 500, one chunk already passes the cap, so it goes alone. Compare sizes at the context budget you will send to the model."
+    },
+    {
+      "type": "body",
+      "title": "Each retriever / has its [own] best",
+      "text": "The same sweep at the 400-character cap, two retrievers:",
+      "visuals": [
+        {
+          "kind": "variants",
+          "options": [
+            {"setting": "spaCy vectors", "tag": "best: 100-150", "output": "13 of 20", "state": "good", "note": "500 finds 9"},
+            {"setting": "BM25", "tag": "best: 200-300", "output": "18 of 20", "state": "good", "note": "500 finds 17; 60 finds 11"}
+          ]
+        }
+      ],
+      "after": "A small, made-up test with averaged word vectors: your best size may differ."
+    },
+    {
+      "type": "body",
+      "instagram": false,
+      "title": "The tuning / [loop]",
+      "text": "Chunk size is a setting you measure for your documents and your model:",
+      "visuals": [
+        {
+          "kind": "steps",
+          "steps": [
+            "Write 20 or more real questions, each with the text that answers it.",
+            "Split at 4 to 6 sizes, with and without overlap.",
+            "Retrieve at the context budget you will send to the model.",
+            "Count answers found whole; pick the smallest size near the top.",
+            "Re-run when documents, model or budget change."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "title": "Chunk size: / when to [sweep]",
+      "visuals": [
+        {
+          "kind": "cards",
+          "cards": [
+            {
+              "state": "good",
+              "title": "Sweep it when",
+              "items": [
+                "Retrieved chunks come back cut mid-fact",
+                "You switch the embedding model or retriever",
+                "You change top-k or the context budget"
+              ]
+            },
+            {
+              "state": "neutral",
+              "title": "Move on when",
+              "items": [
+                "Scores sit flat across sizes: keep the cheapest",
+                "Answers need a whole section: small-to-big retrieval",
+                "Documents have structure: split by type first"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "cheatsheet",
+      "title": "[Cheat] sheet",
+      "rows": [
+        "Build 20+ questions, each with its answer text",
+        "Compare sizes at one context budget",
+        "At a fixed top-k, bigger chunks carry more text into the count",
+        "Size chunks in the embedding model's tokens",
+        "Check how many characters overlap adds",
+        "Pick the smallest size near the top score"
+      ]
+    },
+    {
+      "type": "teaser",
+      "line": "Chunk size decides what one vector holds. Next: what that vector is, and why texts with close meanings land close together."
+    }
+  ]
+}
