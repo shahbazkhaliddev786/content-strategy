@@ -76,7 +76,7 @@
           "kind": "variants",
           "options": [
             {"setting": "200 → overlap 40", "tag": "", "output": "21 chunks, 2,755 characters, with or without overlap", "state": "neutral", "note": "Every piece is a paragraph, longer than 40"},
-            {"setting": "60 → overlap 12", "tag": "", "output": "70 chunks, 2,925 characters (8% more)", "state": "good", "note": "\"plan and 3 years on Enterprise.\" is now one chunk"}
+            {"setting": "60 → overlap 12", "tag": "", "output": "70 chunks, 2,925 characters (8% more than 2,708)", "state": "good", "note": "\"plan and 3 years on Enterprise.\" is now one chunk"}
           ]
         }
       ],
@@ -95,7 +95,7 @@
       ],
       "bullets": [
         "all-MiniLM-L6-v2: input longer than 256 word pieces is truncated by default (model card).",
-        "OpenAI text-embedding-3-small: max input 8,192 tokens.",
+        "OpenAI text-embedding-3-small: 8,192 tokens max.",
         "Count with the embedding model's own tokenizer."
       ]
     },
@@ -139,7 +139,7 @@
           ]
         }
       ],
-      "after": "At 500, one chunk already passes the cap, so it goes alone. Compare sizes at the context budget you will send to the model."
+      "after": "At 500, the cap held one chunk for all 20 questions. Compare sizes at the context budget you will send to the model."
     },
     {
       "type": "body",
@@ -169,7 +169,7 @@
             "Split at 4 to 6 sizes, with and without overlap.",
             "Retrieve at the context budget you will send to the model.",
             "Count answers found whole; pick the smallest size near the top.",
-            "Re-run when documents, model or budget change."
+            "Re-run when data, model or budget change."
           ]
         }
       ]
@@ -207,10 +207,10 @@
       "type": "cheatsheet",
       "title": "[Cheat] sheet",
       "rows": [
-        "Build 20+ questions, each with its answer text",
+        "Write 20+ questions with their answers",
         "Compare sizes at one context budget",
         "At a fixed top-k, bigger chunks carry more text into the count",
-        "Size chunks in the embedding model's tokens",
+        "Size chunks in the model's tokens",
         "Check how many characters overlap adds",
         "Pick the smallest size near the top score"
       ]

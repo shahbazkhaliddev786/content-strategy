@@ -1,4 +1,4 @@
-Status: draft (26 Nov 2026: not posted; fresh reviews 1 and 2 both returned revise (budget-cap wording); both reviews' fixes applied, needs a fresh review)
+Status: reviewed 27 Nov 2026 (draft carried over from 26 Nov; 27 Nov review 1: revise, slide 8 cap line; fixed from the run; review 2: pass)
 
 ## LinkedIn
 
@@ -76,8 +76,8 @@ Both ends fail in ways you can see.
 
 500 characters: a monthly-refund question ranked the billing section above the Refunds section.
 
-Tweet 4 (223 chars):
-BM25 on the same chunks did best at 200-300 characters (18 of 20). Each retriever has its own best size, so re-run the sweep when you change it.
+Tweet 4 (230 chars):
+BM25 on the same chunks did best at 200-300 characters (18 of 20). Each retriever has its own best size, so re-run the sweep when you change retriever.
 
 What context budget do you tune your chunk size against?
 

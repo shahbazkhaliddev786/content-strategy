@@ -187,7 +187,7 @@ check("s5: 200/0 and 200/40 both 21 chunks, 2,755 characters", len(a0) == len(a1
 b0, b1 = split(60, 0), split(60, 12)
 check("s5: 60/0 -> 60/12: 68 -> 70 chunks, 2,708 -> 2,925 characters (+8%)",
       (len(b0), len(b1), sum(map(len, b0)), sum(map(len, b1))) == (68, 70, 2708, 2925)
-      and round(100 * (2925 / 2708 - 1)) == 8 and "2,925" in t and "8%" in t)
+      and round(100 * (2925 / 2708 - 1)) == 8 and "2,925" in t and "8% more than 2,708" in t)
 check("s5: with overlap 12, 'plan and 3 years on Enterprise.' is one chunk", "plan and 3 years on Enterprise." in b1 and "plan and 3 years on Enterprise." in t)
 check("s5: overlap 12 at 60: top-3 found 7 -> 8", found(60, 0, k=3) == 7 and found(60, 12, k=3) == 8 and "7 to 8" in t)
 
@@ -210,6 +210,9 @@ check("s7: at 500, top 3 is 3 of 7 chunks", "3 of 7" in alltext(sl) and len(C500
 sl = slide("Cap the context / [budget]")
 rows = vis(sl, "bars")["rows"]
 check("s8: 400-char budget bars match the run", {int(r["label"]): r["value"] for r in rows} == B4)
+check("s8: at 500, the 400-char cap holds one chunk for all 20 questions",
+      all(len(top_budget(C500, ranked(C500, q, "vec")[1], 400)) == 1 for q, _ in QA)
+      and "one chunk for all 20 questions" in alltext(sl))
 check("s8: 100 and 150 find 13, the most", B4[100] == B4[150] == 13 == max(B4.values()))
 
 # ---- retrievers ----
