@@ -13,8 +13,6 @@ OpenAI's embeddings guide: "An embedding is a vector (list) of floating point nu
 
 Test two things before you trust the nearest hit. Averaged word vectors with stop words dropped scored "can be refunded" against "cannot be refunded" at 1.000. And distances only mean something inside one model's space: mixing two spaCy models moved a question's top answer from Seats to Invoices.
 
-The slides end with a cheat sheet.
-
 Where has keyword search missed a question in your system that an embedding would have caught?
 
 Tomorrow: cosine vs dot product vs L2
@@ -33,8 +31,6 @@ Embedded with spaCy's en_core_web_md word vectors (300 numbers per text), the sa
 OpenAI's embeddings guide: "An embedding is a vector (list) of floating point numbers." all-MiniLM-L6-v2 gives 384; text-embedding-3-small, 1,536 by default.
 
 Test two things before you trust the nearest hit. Averaged word vectors with stop words dropped scored "can be refunded" against "cannot be refunded" at 1.000. And distances only mean something inside one model's space: mixing two spaCy models moved a question's top answer from Seats to Invoices.
-
-The slides end with a cheat sheet.
 
 Where has keyword search missed a question in your system that an embedding would have caught?
 
